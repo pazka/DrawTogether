@@ -14,6 +14,9 @@ function newSocketConnection(socket : any){
     socket.on('connect', () => {
         console.log(`${socket.conn.remoteAddress} connected`);
     });
+    socket.on('test', () => {
+        console.log(`${socket.conn.remoteAddress} test hey`);
+    });
     
     socket.on('disconnect', () => {
         console.log(`${socket.conn.remoteAddress} disconnected`);

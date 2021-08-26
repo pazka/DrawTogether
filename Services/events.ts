@@ -1,7 +1,7 @@
-﻿let allEvents = {};
+﻿let allEvents : any= {};
 
 // Add an observer to observers.
-export function sub(event,observer)
+export function sub(event : string,observer : Function)
 {
     if(Object.keys(allEvents).includes(event)){
         allEvents[event].push(observer);
@@ -12,14 +12,14 @@ export function sub(event,observer)
 
 // Loops over observers and calls the update method on each observer.
 // The state object will call this method everytime it is updated.
-export function send(event, data)
+export function send(event : string, data : any)
 {
     console.log(`[${event}]=`)
     console.info(`${data}`)
     console.log(`###`)
     
     if(Object.keys(allEvents).includes(event)){
-        allEvents[event].forEach(observer => observer(event, data));
+        allEvents[event].forEach((observer : Function) => observer(event, data));
     }
 }
 

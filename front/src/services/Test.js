@@ -26,12 +26,12 @@ socket.on("hello", (data) => {
 })
 
 
-socket.emit("event", "test",'ok')
+socket.emit("test", "test",'ok')
 
 export function Test() {
     const emit = ()=>{
         socket.emit("event", {x : 12,y : 98})
-        socket.emit("mouse", {x : 12,y : 98})
+        socket.emit("test", {x : 12,y : 98})
     }
     
     return (

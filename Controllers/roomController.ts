@@ -40,7 +40,7 @@ export async function updateRoom(room : Room){
     send(On.EDIT_ROOM, room);
 }
 
-function newUniqueId(l) {
+function newUniqueId(l : number) :string{
     const cs       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let newId = new Array(l).fill(0).map(x => cs[Math.floor(Math.random() *
             cs.length)]).join('');
