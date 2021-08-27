@@ -48,7 +48,7 @@ function getRoom(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             if (!allRoomIds.includes(id)) {
-                return [2, createNewRoom()];
+                return [2, createNewRoom(id)];
             }
             else {
                 return [2, storage.getRoom(id)];
@@ -58,14 +58,15 @@ function getRoom(id) {
     });
 }
 exports.getRoom = getRoom;
-function createNewRoom() {
+function createNewRoom(existId) {
+    if (existId === void 0) { existId = null; }
     return __awaiter(this, void 0, void 0, function () {
         var room;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     room = new Room_1.Room();
-                    room.id = newUniqueId(8);
+                    room.id = existId !== null && existId !== void 0 ? existId : newUniqueId(8);
                     allRoomIds.push(room.id);
                     return [4, storage.saveRoom(room)];
                 case 1:

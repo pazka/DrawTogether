@@ -52,8 +52,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined'));
-app.use('/', express.static(path.join(__dirname, 'front/build/')));
-app.get('/new', function (req, res) {
+app.get('/', function (req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var room;
         return __generator(this, function (_a) {
@@ -62,10 +61,16 @@ app.get('/new', function (req, res) {
                 case 1:
                     room = _a.sent();
                     res.redirect(room.id);
+                    next();
                     return [2];
             }
         });
     });
+});
+app.use('/', express.static(path.join(__dirname, 'front/build/')));
+app.get('/:roomId', function (req, res, next) {
+    roomController.getRoom(req.params.roomId);
+    next();
 });
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')));
 app.use('/api/room', api_1["default"]);

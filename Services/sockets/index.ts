@@ -12,7 +12,7 @@
 export async function init(httpServer : any){
     const io = require('socket.io')(httpServer,{
         cors: {
-        origin: "http://localhost:3000",
+        origin: ["http://localhost:3000","http://cptnchtn/"],
         methods: ["GET", "POST"]
     }});
 
@@ -27,6 +27,9 @@ function newSocketConnection(socket : any){
     let currentRoom : string= null
     
     socket.onAny((eventName : string, ...args : any) => {
+        if(eventName == "mouse")
+            return;
+        
         console.log(eventName,args)
     });
     
@@ -43,11 +46,11 @@ function newSocketConnection(socket : any){
     });
 
     socket.on(allEvents.mouse, (data : any) => {
-        console.log(`${currentRoom} -> mouse pos`)
         socket.to(currentRoom).emit(allEvents.mouse, {id : socket.id,...data})
     });
 
     socket.on('disconnect', () => {
+        socket.to(currentRoom).emit(allEvents.mouse, {id : socket.id})
         console.log(`${socket.conn.remoteAddress} disconnected`);
     });
 }

@@ -13,6 +13,7 @@ import routes from './Services/api'
 import * as sockets from './Services/sockets'
 import router from "./Services/api";
 import * as roomController from './Controllers/roomController'
+import {getRoom} from "./Controllers/roomController";
 
 const PORT = 9001
 
@@ -23,13 +24,18 @@ app.use(morgan('combined'));
 
 
 // @ts-ignore
-app.use('/', express.static(path.join(__dirname, 'front/build/')));
 
-app.get('/new', async function (req, res) {
+app.get('/', async function (req, res,next) {
     let room = await roomController.createNewRoom()
     res.redirect(room.id)
+    next()
 })
+app.use('/', express.static(path.join(__dirname, 'front/build/')));
 
+app.get('/:roomId', (req, res,next)=>{
+    roomController.getRoom(req.params.roomId)
+    next()
+})
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')))
 
 app.use('/api/room',routes)

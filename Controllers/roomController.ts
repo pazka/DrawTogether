@@ -11,15 +11,15 @@ storage.getRooms().then(res =>{
 export async function getRoom(id : string) : Promise<Room>{
     
     if(!allRoomIds.includes(id)){
-        return createNewRoom()
+        return createNewRoom(id)
     }else{
         return storage.getRoom(id)
     }
 }
 
-export async function createNewRoom() : Promise<Room>{
+export async function createNewRoom(existId : string = null) : Promise<Room>{
     const room = new Room() 
-    room.id = newUniqueId(8)
+    room.id = existId ?? newUniqueId(8)
 
     allRoomIds.push(room.id)
     await storage.saveRoom(room)

@@ -25,7 +25,8 @@ export function MouseDisplay() {
 
     events.sub(events.On.mouse,'md',(data)=>{
         let newMice = {...mice}
-        newMice[data.id] = data
+        if(data.name)
+            newMice[data.id] = data
         setMice(newMice)
     })
     
