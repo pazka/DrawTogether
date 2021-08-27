@@ -29,6 +29,12 @@ export function MouseDisplay() {
         setMice(newMice)
     })
     
+    sub(On.rcv_leave,'msd',(data)=>{
+        let newMice = {...mice}
+        delete newMice[data.id] 
+        setMice(newMice)
+    })
+    
     
     const handleNameChange = event =>{
         let newName = event.target.value

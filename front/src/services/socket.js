@@ -26,10 +26,11 @@ export default function SocketIOService(){
     socket.on("disconnect", (reason) => {
         console.log("disconnect : " + reason);
     });
-    
+
     socket.on("join",(data)=>{
         console.log('Somebody joined')
     })
+    socket.on("leave",(data)=>events.send(On.rcv_leave,data))
 
     socket.on("loadRoom",data => events.send(On.rcv_load,data))
 

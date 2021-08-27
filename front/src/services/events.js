@@ -29,6 +29,7 @@ const On = Object.freeze({
     snd_save : "snd_save",
     
     rcv_load : "rcv_load",
-    rcv_mouse : "rcv_mouse"
+    rcv_mouse : "rcv_mouse",
+    rcv_leave : "rcv_leave"
 })
 export {On}
