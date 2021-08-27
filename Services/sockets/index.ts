@@ -1,4 +1,6 @@
-﻿enum allEvents {
+﻿import {getRoom} from "../../Controllers/roomController";
+
+enum allEvents {
     join = "join",
     joined = "joined",
     name = "name",
@@ -37,12 +39,13 @@ function newSocketConnection(socket : any){
         console.log(`${socket.conn.remoteAddress} connected`);
     });
 
-    socket.on(allEvents.join, (roomId : string) => {
-        currentRoom = 'room-'+roomId
+    socket.on(allEvents.join, async (roomId : string) => {
+        currentRoom = roomId
         
         socket.to(currentRoom).emit(allEvents.joined,roomId)
         socket.join(currentRoom)
-        console.log(`joined ${currentRoom}`)
+        console.log(`joined room-${currentRoom}`)
+        socket.emit('loadRoom',await getRoom(currentRoom))
     });
 
     socket.on(allEvents.mouse, (data : any) => {

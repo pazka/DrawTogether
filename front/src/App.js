@@ -3,6 +3,7 @@ import './App.css';
 import {useLocation} from "react-router";
 import {MouseDisplay} from "./Components/MouseDisplay";
 import {joinRoom} from "./services/socket";
+import {Layers} from "./Components/Layer";
 
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     
     return <div>
         <MouseDisplay/>
+        <Layers/>
     </div>;
 }
 

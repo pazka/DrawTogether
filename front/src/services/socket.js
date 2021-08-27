@@ -1,5 +1,6 @@
 import {io} from "socket.io-client";
 import * as events from "./events";
+import {On} from "./events";
 
 let currentRoom
 const url = window.location.href.match(/(https*:\/\/)(\w*)([:/]\d*)/)
@@ -24,6 +25,8 @@ socket.on("disconnect", (reason) => {
     console.log("disconnect : " + reason);
 });
 
+socket.on("loadRoom",data => events.send(On.load,data))
+
 
 export function joinRoom(roomId){
     currentRoom = roomId
@@ -35,5 +38,5 @@ export function mouseMoved(data){
 }
 
 socket.on("mouse",(data)=>{
-    events.send(events.On.mouse,data)
+    events.send(On.mouse,data)
 })

@@ -20,6 +20,7 @@ export function send(name,data){
 }
 
 const On = Object.freeze({
+    load : "load",
     mouse : "mouse",
     calc : "calc"
 })

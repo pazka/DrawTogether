@@ -21,8 +21,8 @@ export async function createNewRoom(existId : string = null) : Promise<Room>{
     const room = new Room() 
     room.id = existId ?? newUniqueId(8)
 
-    allRoomIds.push(room.id)
     await storage.saveRoom(room)
+    allRoomIds.push(room.id)
     await storage.saveRooms(allRoomIds)
     
     send(On.NEW_ROOM, room);

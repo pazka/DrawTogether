@@ -67,10 +67,10 @@ function createNewRoom(existId) {
                 case 0:
                     room = new Room_1.Room();
                     room.id = existId !== null && existId !== void 0 ? existId : newUniqueId(8);
-                    allRoomIds.push(room.id);
                     return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
+                    allRoomIds.push(room.id);
                     return [4, storage.saveRooms(allRoomIds)];
                 case 2:
                     _a.sent();

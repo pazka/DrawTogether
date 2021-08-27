@@ -30,7 +30,7 @@ export async function getRooms() {
 }
 
 export async function saveRooms(roomIds: string[]) {
-    return await persist.setItem('rooms', roomIds)
+    return await safeSet('rooms', roomIds)
 }
 
 export async function getRoom(id: string) {
