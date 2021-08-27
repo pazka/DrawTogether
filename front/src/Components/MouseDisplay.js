@@ -1,19 +1,18 @@
 ﻿import {io} from "socket.io-client";
 import {useState,useEffect} from "react";
 import * as events from "../services/events";
-import {mouseMoved} from "../services/socket";
+import {On, send, sub} from "../services/events";
 
 
 export function MouseDisplay() {
     const [mice,setMice] = useState({})
     const [name,setName] = useState("Anon")
     let  position = {}
-
     
     useEffect(()=>{
         function handleMouseClick(e) {
             position = {x : e.x,y : e.y}
-            mouseMoved({name : name,...position})
+            send(On.snd_mouse,{name : name,...position})
         }
         
         window.addEventListener("mousemove", handleMouseClick);
@@ -23,7 +22,7 @@ export function MouseDisplay() {
         }
     })
 
-    events.sub(events.On.mouse,'md',(data)=>{
+    sub(On.rcv_mouse,'md',(data)=>{
         let newMice = {...mice}
         if(data.name)
             newMice[data.id] = data
@@ -34,7 +33,7 @@ export function MouseDisplay() {
     const handleNameChange = event =>{
         let newName = event.target.value
         setName(newName)
-        mouseMoved({name : newName,...position})
+        send(On.snd_mouse,{name : newName,...position})
     }
 
     return (

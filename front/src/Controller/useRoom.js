@@ -6,7 +6,7 @@ export default function useRoom(){
     const [room,setRoom] = useState(new Room())
     
     useEffect(() => {
-        sub(On.load,'roomCont',(_room)=>{
+        sub(On.rcv_load,'roomCont',(_room)=>{
             setRoom(_room)
         })
     });

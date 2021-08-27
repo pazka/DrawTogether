@@ -2,14 +2,16 @@ import logo from './logo.svg';
 import './App.css';
 import {useLocation} from "react-router";
 import {MouseDisplay} from "./Components/MouseDisplay";
-import {joinRoom} from "./services/socket";
 import {Layers} from "./Components/Layer";
+import {On,send} from "./services/events";
+import SocketIOService from "./services/socket"
 
+SocketIOService()
 
 function App() {
     const location = useLocation()
     const roomId = location.pathname.split('/')[1]
-    joinRoom(roomId)
+    send(On.snd_join,roomId)
     
     return <div>
         <MouseDisplay/>
