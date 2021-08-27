@@ -36,10 +36,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getAllRooms = exports.updateRoom = exports.createNewRoom = exports.getRoom = void 0;
+exports.getAllRooms = exports.saveRoom = exports.createNewRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
-var Room_1 = require("../DTOs/Room");
+var RoomDTO_1 = require("../DTOs/RoomDTO");
 var events_1 = require("../Services/events");
+var LayerDTO_1 = require("../DTOs/LayerDTO");
 var allRoomIds = [];
 storage.getRooms().then(function (res) {
     allRoomIds = res !== null && res !== void 0 ? res : [];
@@ -65,8 +66,9 @@ function createNewRoom(existId) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    room = new Room_1.Room();
+                    room = new RoomDTO_1.RoomDTO();
                     room.id = existId !== null && existId !== void 0 ? existId : newUniqueId(8);
+                    room.layers = [new LayerDTO_1.LayerDTO()];
                     return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
@@ -81,7 +83,7 @@ function createNewRoom(existId) {
     });
 }
 exports.createNewRoom = createNewRoom;
-function updateRoom(room) {
+function saveRoom(room) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -93,13 +95,12 @@ function updateRoom(room) {
                     return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
-                    (0, events_1.send)(events_1.On.EDIT_ROOM, room);
-                    return [2];
+                    return [2, room];
             }
         });
     });
 }
-exports.updateRoom = updateRoom;
+exports.saveRoom = saveRoom;
 function getAllRooms() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {

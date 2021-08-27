@@ -1,6 +1,7 @@
 ﻿import * as storage from "../Services/storage";
-import {Room} from "../DTOs/Room";
+import {RoomDTO} from "../DTOs/RoomDTO";
 import {send,On} from "../Services/events";
+import {LayerDTO} from "../DTOs/LayerDTO";
 
 let allRoomIds : string[] = []
 
@@ -8,7 +9,7 @@ storage.getRooms().then(res =>{
     allRoomIds = res ?? []
 });
 
-export async function getRoom(id : string) : Promise<Room>{
+export async function getRoom(id : string) : Promise<RoomDTO>{
     
     if(!allRoomIds.includes(id)){
         return createNewRoom(id)
@@ -17,9 +18,10 @@ export async function getRoom(id : string) : Promise<Room>{
     }
 }
 
-export async function createNewRoom(existId : string = null) : Promise<Room>{
-    const room = new Room() 
+export async function createNewRoom(existId : string = null) : Promise<RoomDTO>{
+    const room = new RoomDTO() 
     room.id = existId ?? newUniqueId(8)
+    room.layers = [new LayerDTO()]
 
     await storage.saveRoom(room)
     allRoomIds.push(room.id)
@@ -29,7 +31,7 @@ export async function createNewRoom(existId : string = null) : Promise<Room>{
     return room
 }
 
-export async function updateRoom(room : Room){
+export async function saveRoom(room : RoomDTO): Promise<RoomDTO>{
     if(!allRoomIds.includes(room.id)){
         throw Error('No Room with this id')
     }
@@ -37,7 +39,7 @@ export async function updateRoom(room : Room){
     room.lastUpdate = Date.now()
     await storage.saveRoom(room)
     
-    send(On.EDIT_ROOM, room);
+    return room;
 }
 
 export async function getAllRooms(){

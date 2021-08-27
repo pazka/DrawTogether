@@ -1,15 +1,19 @@
 ﻿import {On, sub} from "../services/events";
-import {useState,useEffect} from "react";
-import {Room} from "../DTOs/Room";
+import {useState, useEffect} from "react";
+import {RoomDTO} from "../DTOs/RoomDTO";
+import {createGlobalState} from 'react-hooks-global-state';
 
-export default function useRoom(){
-    const [room,setRoom] = useState(new Room())
-    
+const {useGlobalState} = createGlobalState({room: new RoomDTO()});
+
+
+export default function useRoom(token) {
+    const [room, setRoom] = useGlobalState('room')
+
     useEffect(() => {
-        sub(On.rcv_load,'roomCont',(_room)=>{
+        sub(On.rcv_load, token, (_room) => {
             setRoom(_room)
         })
-    });
-    
+    }, [room]);
+
     return room
 }

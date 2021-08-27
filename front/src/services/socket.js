@@ -26,6 +26,10 @@ export default function SocketIOService(){
     socket.on("disconnect", (reason) => {
         console.log("disconnect : " + reason);
     });
+    
+    socket.on("join",(data)=>{
+        console.log('Somebody joined')
+    })
 
     socket.on("loadRoom",data => events.send(On.rcv_load,data))
 
@@ -33,7 +37,7 @@ export default function SocketIOService(){
 
     events.sub(On.snd_join,'sock',x => joinRoom(x))
     events.sub(On.snd_mouse,'sock',x => socket.emit("mouse",x))
-    events.sub(On.snd_save,'sock',x => socket.emit("save",x))
+    events.sub(On.snd_save,'sock',x => socket.emit("saveRoom",x))
 
     function joinRoom(roomId){
         currentRoom = roomId

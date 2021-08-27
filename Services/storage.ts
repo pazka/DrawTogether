@@ -1,4 +1,4 @@
-﻿import {Room} from "../DTOs/Room";
+﻿import {RoomDTO} from "../DTOs/RoomDTO";
 
 import * as persist from 'node-persist'
 
@@ -37,21 +37,6 @@ export async function getRoom(id: string) {
     return await safeGet('room-' + id)
 }
 
-export async function saveRoom(room: Room) {
+export async function saveRoom(room: RoomDTO) {
     return await safeSet('room-' + room.id, room)
 }
-
-/*
-    storage.getItem(req.params.id).then(data => {
-        return res.send(data);
-    }, err => {
-        return res.send(err);
-    })
-    
-    
-    storage.setItem(req.params.id, req.body).then(data => {
-        return res.send(data);
-    }, err => {
-        return res.send(err);
-    })
-*/

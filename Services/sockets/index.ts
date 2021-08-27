@@ -1,18 +1,17 @@
-﻿import {getRoom} from "../../Controllers/roomController";
+﻿import {getRoom, saveRoom} from "../../Controllers/roomController";
+import {RoomDTO} from "../../DTOs/RoomDTO";
+const iolib = require('socket.io')
+let io : any
 
 enum allEvents {
     join = "join",
-    joined = "joined",
-    name = "name",
-    leave = "leave",
     mouse = "mouse",
-    text = "text",
-    calc = "calc",
-    img = "img"
+    loadRoom = "loadRoom",
+    saveRoom = "saveRoom"
 }
 
 export async function init(httpServer : any){
-    const io = require('socket.io')(httpServer,{
+    io = iolib(httpServer,{
         cors: {
         origin: ["http://localhost:3000","http://cptnchtn/"],
         methods: ["GET", "POST"]
@@ -42,15 +41,20 @@ function newSocketConnection(socket : any){
     socket.on(allEvents.join, async (roomId : string) => {
         currentRoom = roomId
         
-        socket.to(currentRoom).emit(allEvents.joined,roomId)
         socket.join(currentRoom)
         console.log(`joined room-${currentRoom}`)
-        socket.emit('loadRoom',await getRoom(currentRoom))
+
+        socket.to(currentRoom).emit(allEvents.join,roomId)
+        io.to(currentRoom).emit(allEvents.loadRoom,await getRoom(currentRoom))
     });
 
     socket.on(allEvents.mouse, (data : any) => {
         socket.to(currentRoom).emit(allEvents.mouse, {id : socket.id,...data})
     });
+    
+    socket.on(allEvents.saveRoom, async (room :RoomDTO) =>{
+        io.to(currentRoom).emit(allEvents.loadRoom,await saveRoom(room))
+    })
 
     socket.on('disconnect', () => {
         socket.to(currentRoom).emit(allEvents.mouse, {id : socket.id})
