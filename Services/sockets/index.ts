@@ -48,7 +48,8 @@ function newSocketConnection(socket: any) {
         console.log(`joined room-${currentRoom}`)
 
         socket.to(currentRoom).emit(allEvents.join, roomId)
-        io.to(currentRoom).emit(allEvents.loadRoom, await getRoom(currentRoom))
+        let room = await getRoom(currentRoom)
+        io.to(currentRoom).emit(allEvents.loadRoom, room)
     });
 
     socket.on(allEvents.mouse, (data: any) => {

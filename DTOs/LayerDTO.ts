@@ -1,6 +1,8 @@
-﻿export class LayerDTO {
+﻿import {NameDTO} from "./NameDTO";
+
+export class LayerDTO {
     imgPath : string = ""
-    texts : string[] = []
+    texts : NameDTO[] = []
     name : string = "Layer"
     id : number
     
