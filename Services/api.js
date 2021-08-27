@@ -39,6 +39,21 @@ exports.__esModule = true;
 var express = require("express");
 var router = express.Router();
 var roomController = require('../Controllers/roomController');
+router.get('/all', function (req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _a, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    _b = (_a = res).send;
+                    return [4, roomController.getAllRooms()];
+                case 1:
+                    _b.apply(_a, [_c.sent()]);
+                    return [2];
+            }
+        });
+    });
+});
 router.get('/:roomid', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, _b;

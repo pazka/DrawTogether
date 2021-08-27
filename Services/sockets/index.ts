@@ -1,0 +1,54 @@
+﻿enum allEvents {
+    join = "join",
+    joined = "joined",
+    name = "name",
+    leave = "leave",
+    mouse = "mouse",
+    text = "text",
+    calc = "calc",
+    img = "img"
+}
+
+export async function init(httpServer : any){
+    const io = require('socket.io')(httpServer,{
+        cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"]
+    }});
+
+    io.on('connection', (socket : any) => {
+        console.log('Client connected');
+        newSocketConnection(socket)
+    });
+}
+
+
+function newSocketConnection(socket : any){
+    let currentRoom : string= null
+    
+    socket.onAny((eventName : string, ...args : any) => {
+        console.log(eventName,args)
+    });
+    
+    socket.on('connect', () => {
+        console.log(`${socket.conn.remoteAddress} connected`);
+    });
+
+    socket.on(allEvents.join, (roomId : string) => {
+        currentRoom = 'room-'+roomId
+        
+        socket.to(currentRoom).emit(allEvents.joined,roomId)
+        socket.join(currentRoom)
+        console.log(`joined ${currentRoom}`)
+    });
+
+    socket.on(allEvents.mouse, (data : any) => {
+        console.log(`${currentRoom} -> mouse pos`)
+        socket.to(currentRoom).emit(allEvents.mouse, {id : socket.id,...data})
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`${socket.conn.remoteAddress} disconnected`);
+    });
+}
+

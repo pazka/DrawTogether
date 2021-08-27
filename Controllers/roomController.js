@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.updateRoom = exports.createNewRoom = exports.getRoom = void 0;
+exports.getAllRooms = exports.updateRoom = exports.createNewRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
 var Room_1 = require("../DTOs/Room");
 var events_1 = require("../Services/events");
@@ -99,6 +99,14 @@ function updateRoom(room) {
     });
 }
 exports.updateRoom = updateRoom;
+function getAllRooms() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2, allRoomIds];
+        });
+    });
+}
+exports.getAllRooms = getAllRooms;
 function newUniqueId(l) {
     var cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     var newId = new Array(l).fill(0).map(function (x) { return cs[Math.floor(Math.random() *
