@@ -19,7 +19,7 @@ export function Names(props) {
     useGlobalMouseClick(handleMouseClick)
     useGlobalMouseMove(handleMouseMove)
     useGlobalKeypress((e)=> {
-        if(e.code === "KeyN") {
+        if(e.code === "KeyN" && editIndex === -1) {
             setNewName(!newName)
             setEditIndex(-1)
         }
