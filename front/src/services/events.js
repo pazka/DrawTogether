@@ -1,4 +1,4 @@
-﻿
+
 let events = {}
 
 export function sub(name,id,cb){
@@ -17,9 +17,7 @@ export function send(name,data){
     }
     
     if(Object.keys(events).includes(name)){
-        Object.values(events[name]).map(cb =>{
-            cb(data)
-        })
+        Object.values(events[name]).forEach(cb => cb(data))
     }
 }
 
@@ -30,6 +28,8 @@ const On = Object.freeze({
     
     rcv_load : "rcv_load",
     rcv_mouse : "rcv_mouse",
-    rcv_leave : "rcv_leave"
+    rcv_leave : "rcv_leave",
+    
+    ui_newName : "ui_newName",
 })
 export {On}

@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getAllRooms = exports.saveRoom = exports.createNewRoom = exports.getRoom = void 0;
+exports.getAllRooms = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
 var RoomDTO_1 = require("../DTOs/RoomDTO");
 var events_1 = require("../Services/events");
@@ -49,7 +49,7 @@ function getRoom(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             if (!allRoomIds.includes(id)) {
-                return [2, createNewRoom(id)];
+                return [2, new RoomDTO_1.RoomDTO()];
             }
             else {
                 return [2, storage.getRoom(id)];
@@ -59,6 +59,20 @@ function getRoom(id) {
     });
 }
 exports.getRoom = getRoom;
+function fetchOrCreateRoom(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            if (!allRoomIds.includes(id)) {
+                return [2, createNewRoom(id)];
+            }
+            else {
+                return [2, storage.getRoom(id)];
+            }
+            return [2];
+        });
+    });
+}
+exports.fetchOrCreateRoom = fetchOrCreateRoom;
 function createNewRoom(existId) {
     if (existId === void 0) { existId = null; }
     return __awaiter(this, void 0, void 0, function () {

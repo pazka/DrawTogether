@@ -1,31 +1,70 @@
-* *{
+*{
   margin : 0;
   padding : 0;
-  width : auto;
-  height : auto;
 }
 
+.mouse-container{
+  z-index: 20;
+}
 
-.editName{
+.edit-name{
   display : none
 }
 
+.name-container{
+  z-index: 20;
+}
+.name-item{
+  z-index: 30;
+}
 
-.layerContainer{
+.layer-container{
+  z-index: 11;
+  position: fixed;
   display: block;
   min-width: 50px;
   min-height: 50px;
-  height : auto;
-  width : auto;
-  position: sticky;
   top: 0;
   right: 0;
 }
 
 
-.layerItem{
+.layer-item{
   display: block;
   width: 50px;
   min-height: 50px;
-  border: solid red 1px;
+  cursor: pointer;
+}
+
+.layer-item:hover{
+  border: solid 1px rgb(255,0,0)
+}
+
+.layer-img img{
+  z-index: -1;
+  position : fixed;
+  top : 0;
+  left : 0;
+  overflow: auto;
+}
+
+.layer-controls{
+  z-index: 10;
+  display: flex;
+  position : fixed;
+  width : 20%;
+  height : 100px;
+  min-width : 200px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 1em;
+  border: solid 1px black;
+}
+
+.layer-controls > * {
+  margin : 0.5rem
 }

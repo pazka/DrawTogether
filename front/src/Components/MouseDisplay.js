@@ -1,6 +1,4 @@
-﻿import {io} from "socket.io-client";
-import {useState, useEffect} from "react";
-import * as events from "../services/events";
+import {useState} from "react";
 import {On, send, sub} from "../services/events";
 import {useGlobalMouseMove} from "../Controller/DOMEvents";
 
@@ -8,13 +6,13 @@ import {useGlobalMouseMove} from "../Controller/DOMEvents";
 export default function MouseDisplay() {
     const [mice, setMice] = useState({})
     const [name, setName] = useState("Anon")
-    const [tmpPos, setTmpPos] = useState([0,0])
+    const [tmpPos, setTmpPos] = useState([0, 0])
     let position
-    
-    useGlobalMouseMove((e)=>{
+
+    useGlobalMouseMove((e) => {
         let position = {x: e.clientX, y: e.clientY}
         send(On.snd_mouse, {name: name, ...position})
-        setTmpPos([e.clientX,e.clientY])
+        setTmpPos([e.clientX, e.clientY])
     })
 
     sub(On.rcv_mouse, 'md', (data) => {
@@ -38,20 +36,20 @@ export default function MouseDisplay() {
     }
 
     return (
-        <div>
+        <div className={"mouse-container"}>
             {(process.env.NODE_ENV !== 'production') && <span style={{
                 backgroundColor: "red",
-                position: "absolute",
-                left: tmpPos[0] +5 + "px",
-                top: tmpPos[1] +5 + "px"
+                position: "fixed",
+                left: tmpPos[0] + 20,
+                top: tmpPos[1] + 20
             }}><p>test</p></span>}
-            <p>{Object.values(mice).length} mice</p>
+            <p>{Object.values(mice).length} users in this room</p>
             <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
             {Object.values(mice).map((m, i) =>
                 <span key={"mouse" + i} style={{
-                    position: "absolute",
-                    left: m.x + "px",
-                    top: m.y + "px"
+                    position: "fixed",
+                    left: m.x,
+                    top: m.y
                 }}>
                 <p>{m.name}</p>
             </span>)}

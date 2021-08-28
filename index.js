@@ -69,7 +69,7 @@ app.get('/', function (req, res, next) {
 });
 app.use('/', express.static(path.join(__dirname, 'front/build/')));
 app.get('/:roomId', function (req, res, next) {
-    roomController.getRoom(req.params.roomId);
+    roomController.fetchOrCreateRoom(req.params.roomId);
     next();
 });
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')));

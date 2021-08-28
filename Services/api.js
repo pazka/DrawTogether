@@ -36,9 +36,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var path = require("path");
+var multer = require("multer");
 var express = require("express");
+var fs = require("fs");
+var imageController_1 = require("../Controllers/imageController");
 var router = express.Router();
 var roomController = require('../Controllers/roomController');
+var upload = multer({
+    dest: "uploads"
+});
 router.get('/all', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, _b;
@@ -67,6 +74,48 @@ router.get('/:roomid', function (req, res) {
                     return [2];
             }
         });
+    });
+});
+router.get("/:roomId/img/:layerid", function (req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var targetPath;
+        return __generator(this, function (_a) {
+            targetPath = path.join(__dirname, "../front/build/uploads/" + req.params.roomId + "/" + req.params.layerid + ".png");
+            res.sendFile(targetPath);
+            return [2];
+        });
+    });
+});
+router.post("/:roomId/:layerId/upload", upload.single("layerImg"), function (req, res) {
+    var tempPath = req.file.path;
+    var fileExt = path.extname(req.file.originalname);
+    var targetFolder = path.join(__dirname, "../front/build/uploads/" + req.params.roomId);
+    var targetPath = path.join(targetFolder, "" + req.params.layerId + fileExt);
+    if (!fs.existsSync(targetFolder)) {
+        fs.mkdirSync(targetFolder, { recursive: true });
+    }
+    if (!(0, imageController_1.isFormatValid)(fileExt)) {
+        fs.unlink(tempPath, function (err) {
+            if (err) {
+                res
+                    .status(403)
+                    .send(err.message);
+            }
+            res
+                .status(403)
+                .send("Only " + imageController_1.validFormats.join(', ') + " files are allowed!");
+        });
+        return;
+    }
+    fs.rename(tempPath, targetPath, function (err) {
+        if (err) {
+            res
+                .status(403)
+                .send(err.message);
+        }
+        res
+            .status(200)
+            .send("File uploaded!");
     });
 });
 exports["default"] = router;

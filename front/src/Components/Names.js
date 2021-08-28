@@ -1,8 +1,8 @@
-﻿import {io} from "socket.io-client";
+import {io} from "socket.io-client";
 import {useState, useEffect} from "react";
 import * as events from "../services/events";
 import {On, send, sub} from "../services/events";
-import useRoom from "../Controller/useRoom";
+import {useRoom} from "../Controller/useRoom";
 import {NameDTO} from "../DTOs/NameDTO";
 import {LayerDTO} from "../DTOs/LayerDTO";
 import {useGlobalMouseClick} from "../Controller/DOMEvents";
@@ -19,10 +19,14 @@ export function Names(props) {
     useGlobalMouseClick(handleMouseClick)
     useGlobalMouseMove(handleMouseMove)
     useGlobalKeypress((e)=> {
-        if(e.code === "KeyN" && editIndex === -1) {
-            setNewName(!newName)
-            setEditIndex(-1)
+        if(newName) {
+            setNewName(false)
         }
+    })
+    
+    sub(On.ui_newName,"names",()=>{
+        setNewName(true)
+        setEditIndex(-1)
     })
 
     function handleMouseClick(e) {
@@ -57,21 +61,30 @@ export function Names(props) {
 
         send(On.snd_save, newRoom)
     }
+    
+    function getNewName(){
+        return newName ? <span style={{
+            display : "block",
+            position: "fixed",
+            left : tmpPos[0],
+            top : tmpPos[1]
+        }}> New Text</span> : null
+    }
+    
+    function getNameEdit(){
+        return <span className={"edit-name"}></span>
+    }
 
     return (
-        <div>
-            {newName && <span style={{
-                display : "block",
-                position: "absolute",
-                left : tmpPos[0]+"px",
-                top : tmpPos[1]+"px"
-            }}> New Text</span>}
+        <div className={"name-container"}>
+            {getNewName()}
             {names.map((name, i) => (
-                <span key={i} style = {{
+                <span className={"name-item"}
+                      key={i} style = {{
                     display : "block",
-                    position: "absolute",
-                    left : name.pos[0]+"px",
-                    top : name.pos[1]+"px"
+                    position: "fixed",
+                    left : name.pos[0],
+                    top : name.pos[1]
                 }}>
                 {(editIndex === i) ? <input onBlur={x => setEditIndex(-1)}
                                            defaultValue={name.val}
@@ -83,9 +96,7 @@ export function Names(props) {
                         onDragEnd={(e)=>{dragEnd(e,i)}}
                     >{name.val}</p> 
                 }
-                <span className={"editName"}>
-                    
-                </span>
+                    {getNameEdit()}
                 </span>
             ))}
         </div>

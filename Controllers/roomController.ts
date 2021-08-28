@@ -12,6 +12,14 @@ storage.getRooms().then(res =>{
 export async function getRoom(id : string) : Promise<RoomDTO>{
     
     if(!allRoomIds.includes(id)){
+        return new RoomDTO()
+    }else{
+        return storage.getRoom(id)
+    }
+}
+export async function fetchOrCreateRoom(id : string) : Promise<RoomDTO>{
+
+    if(!allRoomIds.includes(id)){
         return createNewRoom(id)
     }else{
         return storage.getRoom(id)

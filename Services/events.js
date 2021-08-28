@@ -23,7 +23,7 @@ exports.send = send;
 var On = Object.freeze({
     NEW_ROOM: "NEW_ROOM",
     EDIT_ROOM: "EDIT_ROOM",
-    CALC_ACTION: "CALC_ACTION",
+    NEW_IMG: "NEW_IMG",
     MOUSE_ACTION: "MOUSE_ACTION",
     TEXT_ACTION: "TEXT_ACTION"
 });

@@ -1,12 +1,12 @@
-﻿import useRoom from "../Controller/useRoom";
+import {useLayer,useRoom} from "../Controller/useRoom";
 import {On, send} from "../services/events";
 import {LayerDTO} from "../DTOs/LayerDTO";
 import Layer from "./Layer";
-import {useState} from "react";
 
 export default function Layers() {
     let room = useRoom("ok")
-    const [activeLayer,setActiveLayer] = useState(0)
+    const [activeLayerId,setActiveLayer] = useLayer()
+    
 
     function handleAddLayer() {
         let newRoom = {...room}
@@ -16,15 +16,17 @@ export default function Layers() {
 
         send(On.snd_save, newRoom)
     }
+    
 
-    return <div className={'layerContainer'}>
+    return <div className={'layer-container'}>
         <div>
-            {"active " + activeLayer}
             {room.layers.map((l, i) => <div key={i}>
-                <Layer i={i} active={activeLayer === i} 
+                <Layer i={i} 
+                       active={activeLayerId === l.id} 
                        onClick={e=> {
-                           setActiveLayer(i)
-                       }}/>
+                           setActiveLayer(l.id)
+                       }}
+                />
             </div>)}
         </div>
         <div>

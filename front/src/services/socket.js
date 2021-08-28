@@ -1,21 +1,14 @@
 import {io} from "socket.io-client";
 import * as events from "./events";
 import {On} from "./events";
+import {getBaseUrl} from "./rest";
 
 let socket;
 let currentRoom
 
 
 export default function SocketIOService(){
-    const url = window.location.href.match(/(https*:\/\/)(\w*)([:/]\d*)/)
-    const protocol = url[1]
-    const domain = url[2]
-    const port = url[3]
-    const dynamicUrl = protocol+domain+port
-
-    let ioUrl = (process.env.NODE_ENV !== 'production') ? "http://localhost:9001" : dynamicUrl
-
-    socket = io(ioUrl);
+    socket = io(getBaseUrl());
 
     console.log("I'm a new instance !")
 
