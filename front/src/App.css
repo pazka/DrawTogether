@@ -21,15 +21,19 @@
   border-left : 2px solid red;
 }
 
-.edit-name{
-  display : none
-}
 
 .name-container{
   z-index: 20;
 }
 .name-item{
   z-index: 30;
+}
+
+.name-item:hover .edit-name{
+  display : inherit;;
+}
+.edit-name{
+  display : none
 }
 
 .layer-container{
