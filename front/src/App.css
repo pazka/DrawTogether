@@ -3,8 +3,17 @@
   padding : 0;
 }
 
-.mouse-container{
+.mouse-container {
+  display: flex;
+  width : fit-content;
   z-index: 20;
+}
+
+.mouse-container > *{
+  background-color: rgba(255,255,255,0.5);
+  padding : 0.5em;
+  border: 1px solid black;
+  border-radius: 0.7rem;
 }
 .mice{
   padding : 5px;
@@ -37,6 +46,7 @@
 }
 
 .layer-container{
+  background-color: rgba(255,255,255,0.5);
   z-index: 11;
   position: fixed;
   display: block;
@@ -67,11 +77,13 @@
 }
 
 .layer-controls{
+  background-color: rgba(255,255,255,0.5);
   z-index: 10;
   display: flex;
   position : fixed;
-  width : 20%;
-  height : 100px;
+  width : fit-content;
+  height: fit-content;
+  padding: 0.5rem;
   min-width : 200px;
   top: 0;
   left: 0;
@@ -79,10 +91,11 @@
   bottom: 0;
   margin-left: auto;
   margin-right: auto;
-  border-radius: 1em;
+  border-radius: 0.5em;
   border: solid 1px black;
 }
 
 .layer-controls > * {
+  height: 2rem;
   margin : 0.5rem
 }

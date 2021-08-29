@@ -109,7 +109,6 @@ function saveRoom(room) {
                     return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
-                    (0, events_1.send)(events_1.On.EDIT_ROOM, room);
                     return [2, room];
             }
         });
@@ -134,6 +133,7 @@ function addImgPathInRoom(roomId, layerId, path) {
                     return [4, saveRoom(room)];
                 case 2:
                     _a.sent();
+                    (0, events_1.send)(events_1.On.EDIT_ROOM, room);
                     return [2];
             }
         });

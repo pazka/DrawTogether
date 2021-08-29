@@ -58,6 +58,8 @@ function newSocketConnection(socket: any) {
 
     socket.on(allEvents.saveRoom, async (room: RoomDTO) => {
         await saveRoom(room)
+
+        io.to(room.id).emit(allEvents.loadRoom, room)
     })
 
     socket.on('disconnect', () => {

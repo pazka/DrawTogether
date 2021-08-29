@@ -59,13 +59,17 @@ export default function MouseDisplay() {
             </span>
     }
 
-    return (
-        <div className={"mouse-container"}>
-            <p>{Object.values(mice).length} users in this room</p>
-            <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
-            
-            {getMyMouse()}
-            {Object.values(mice).map((m, i) => getUserMice(m, i))}
-        </div>
+    return (<div>
+            <div className={"mouse-container"}>
+                <p>{Object.values(mice).length} users in this room</p>
+                <span>
+                <span> you = </span>
+                <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
+            </span>
+
+                {getMyMouse()}
+            </div>
+        {Object.values(mice).map((m, i) => getUserMice(m, i))}
+    </div>
     )
 }

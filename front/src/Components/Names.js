@@ -53,7 +53,7 @@ export function Names(props) {
         send(On.snd_save, newRoom)
     }
 
-    let offSet = []
+    let offSet = [0,0]
 
     function dragStart(e, i) {
         offSet = [
@@ -98,6 +98,13 @@ export function Names(props) {
         }
     }
     
+    function deleteText(i){
+        let newRoom = {...room}
+        newRoom.layers[props.i].texts.splice(i, 1)
+
+        send(On.snd_save, newRoom)
+    }
+    
     function getNameEdit(i) {
         const text = room.layers[props.i].texts[i]
         return <span className={"edit-name"}>
@@ -114,6 +121,7 @@ export function Names(props) {
             color={text.color}
             onChangeComplete={(e)=>editColor(e,i,true)}
             />} 
+            <button onClick={()=>deleteText(i)} style={{marginLeft : '15px'}}> Delete</button>
         </span>
     }
 

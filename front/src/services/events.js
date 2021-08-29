@@ -11,7 +11,7 @@ export function sub(name,id,cb){
 
 export function send(name,data){
     if(name !== On.snd_mouse){
-        console.group(`[${name}]`)
+        console.group(`[${name}]${new Date()}`)
         console.log(data)
         console.groupEnd()
     }

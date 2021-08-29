@@ -48,8 +48,6 @@ export async function saveRoom(room: RoomDTO): Promise<RoomDTO> {
     room.lastUpdate = Date.now()
     await storage.saveRoom(room)
 
-    send(On.EDIT_ROOM, room);
-
     return room;
 }
 
@@ -64,6 +62,7 @@ export async function addImgPathInRoom(roomId: string, layerId: number, path: st
     room.layers[layerIndex].imgPath = path
 
     await saveRoom(room)
+    send(On.EDIT_ROOM, room);
 }
 
 export async function getAllRooms() {

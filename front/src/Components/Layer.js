@@ -3,6 +3,7 @@ import {On, send} from "../services/events";
 import {useState} from "react";
 import {Names} from "./Names";
 import {getBaseUrl} from "../services/rest";
+import {Delete} from "@material-ui/icons";
 
 
 export default function Layer(props) {
@@ -11,6 +12,8 @@ export default function Layer(props) {
     let layer = room.layers[props.i]
 
     function handleRemove(){
+        if (!window.confirm("Confirm delete :")) return;
+        
         let newRoom = {...room}
 
         newRoom.layers.splice(props.i, 1)
@@ -40,7 +43,7 @@ export default function Layer(props) {
              onClick={props.onClick}>
             {getLayerName()}
 
-            <button onClick={handleRemove}>Remove</button>
+            <button onClick={handleRemove}><Delete/></button>
             {props.active && <div >
                 <Names i={props.i}/>
             </div>}

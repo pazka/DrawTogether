@@ -24,7 +24,7 @@ export default function LayerControls() {
     return <div className={"layer-controls"}>
         <button onClick={() => send(On.ui_newName, null)}> New Text</button>
         <form>
-            <label htmlFor="layerImg">Set Img</label>
+            <label htmlFor="layerImg">Background => </label>
             <input ref={inputRef} type="file" name={"layerImg"} onChange={handleFileChange}/>
         </form>
     </div>
