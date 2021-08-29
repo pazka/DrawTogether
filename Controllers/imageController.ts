@@ -4,7 +4,7 @@ import {addImgPathInRoom} from "./roomController";
 
 
 export const validFormats = [
-    ".png", ".img"
+    ".png", ".jpg", ".jpeg", ".svg"
 ]
 
 export function isFormatValid(format: string) {
@@ -35,13 +35,13 @@ export function writeImage(originalName: string, roomId: string, layerId: string
         }
 
         //move tmp file to public folder
-        const targetPath = path.join(targetFolder, `${layerId}${fileExt}`);
+        const targetPath = path.join(targetFolder, `${originalName}`);
 
         fs.rename(tempPath, targetPath, (err: any) => {
             if (err)
                 return reject(err)
 
-            addImgPathInRoom(roomId, Number(layerId),`/uploads/${roomId}/${layerId}${fileExt}`).then(resolve).catch(reject)
+            addImgPathInRoom(roomId, Number(layerId),`/uploads/${roomId}/${originalName}`).then(resolve).catch(reject)
         });
     })
 }

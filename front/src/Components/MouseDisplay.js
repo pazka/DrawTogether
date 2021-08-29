@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {On, send, sub} from "../services/events";
 import {useGlobalMouseMove} from "../Controller/DOMEvents";
+import {Accessibility} from '@material-ui/icons'
 
 
 export default function MouseDisplay() {
@@ -35,24 +36,36 @@ export default function MouseDisplay() {
         send(On.snd_mouse, {name: newName, ...position})
     }
 
-    return (
-        <div className={"mouse-container"}>
-            {(process.env.NODE_ENV !== 'production') && <span style={{
+    function getMyMouse() {
+        if ((process.env.NODE_ENV !== 'production')) {
+            return <span style={{
                 backgroundColor: "red",
                 position: "fixed",
                 left: tmpPos[0] + 20,
                 top: tmpPos[1] + 20
-            }}><p>test</p></span>}
+            }}><p>test</p></span>
+        } else return null
+    }
+
+    function getUserMice(m, i) {
+        return <span className={'mice'} key={"mouse" + i} style={{
+            position: "fixed",
+            left: m.x,
+            top: m.y
+        }}>
+            <span style={{display : 'flex'}}>
+                <p>{m.name}</p>
+            </span>
+            </span>
+    }
+
+    return (
+        <div className={"mouse-container"}>
             <p>{Object.values(mice).length} users in this room</p>
             <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
-            {Object.values(mice).map((m, i) =>
-                <span key={"mouse" + i} style={{
-                    position: "fixed",
-                    left: m.x,
-                    top: m.y
-                }}>
-                <p>{m.name}</p>
-            </span>)}
+            
+            {getMyMouse()}
+            {Object.values(mice).map((m, i) => getUserMice(m, i))}
         </div>
     )
 }

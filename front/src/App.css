@@ -6,6 +6,20 @@
 .mouse-container{
   z-index: 20;
 }
+.mice{
+  padding : 5px;
+  font-weight: bolder;
+}
+.mice:before{
+  content: "";
+  position: absolute;
+  top : 0;
+  left : 0;
+  width : 10px;
+  height: 10px;
+  border-top : 2px solid red;
+  border-left : 2px solid red;
+}
 
 .edit-name{
   display : none

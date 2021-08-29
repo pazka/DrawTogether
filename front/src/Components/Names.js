@@ -51,13 +51,21 @@ export function Names(props) {
         send(On.snd_save, newRoom)
     }
 
+    let offSet = []
+    
     function dragStart(e,i){
-
+        offSet = [
+            room.layers[props.i].texts[i].pos[0] - e.clientX , 
+            room.layers[props.i].texts[i].pos[1] - e.clientY 
+        ]
     }
     
     function dragEnd(e,i){
         let newRoom = {...room}
-        newRoom.layers[props.i].texts[i].pos = [e.clientX, e.clientY]
+        newRoom.layers[props.i].texts[i].pos = [
+            e.clientX + offSet[0], 
+            e.clientY + offSet[1]
+        ]
 
         send(On.snd_save, newRoom)
     }
