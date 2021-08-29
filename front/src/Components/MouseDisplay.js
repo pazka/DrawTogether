@@ -11,9 +11,9 @@ export default function MouseDisplay() {
     let position
 
     useGlobalMouseMove((e) => {
-        let position = {x: e.clientX, y: e.clientY}
+        let position = {x: window.scrollX + e.clientX, y: window.scrollY + e.clientY}
         send(On.snd_mouse, {name: name, ...position})
-        setTmpPos([e.clientX, e.clientY])
+        setTmpPos([position.x, position.y])
     })
 
     sub(On.rcv_mouse, 'md', (data) => {
@@ -40,7 +40,7 @@ export default function MouseDisplay() {
         if ((process.env.NODE_ENV !== 'production')) {
             return <span style={{
                 backgroundColor: "red",
-                position: "fixed",
+                position: "absolute",
                 left: tmpPos[0] + 20,
                 top: tmpPos[1] + 20
             }}><p>test</p></span>
@@ -49,11 +49,11 @@ export default function MouseDisplay() {
 
     function getUserMice(m, i) {
         return <span className={'mice'} key={"mouse" + i} style={{
-            position: "fixed",
+            position: "absolute",
             left: m.x,
             top: m.y
         }}>
-            <span style={{display : 'flex'}}>
+            <span style={{display: 'flex'}}>
                 <p>{m.name}</p>
             </span>
             </span>
@@ -66,10 +66,10 @@ export default function MouseDisplay() {
                 <span> you = </span>
                 <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
             </span>
-
-                {getMyMouse()}
             </div>
-        {Object.values(mice).map((m, i) => getUserMice(m, i))}
-    </div>
+            {Object.values(mice).map((m, i) => getUserMice(m, i))}
+
+            {getMyMouse()}
+        </div>
     )
 }

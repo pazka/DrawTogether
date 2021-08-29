@@ -1,8 +1,6 @@
 import {useRoom} from "../Controller/useRoom";
 import {On, send} from "../services/events";
 import {useState} from "react";
-import {Names} from "./Names";
-import {getBaseUrl} from "../services/rest";
 import {Delete} from "@material-ui/icons";
 
 
@@ -37,16 +35,11 @@ export default function Layer(props) {
     
     
     return <div>
-        <div className={'layer-item'} style={{
-            backgroundColor : props.active ? "rgba(255,0,0,0.1)" : "white"
-        }}
+        <div className={`layer-item ${props.active && 'layer-item-selected'}`}
              onClick={props.onClick}>
             {getLayerName()}
 
             <button onClick={handleRemove}><Delete/></button>
-            {props.active && <div >
-                <Names i={props.i}/>
-            </div>}
         </div>
     </div>
 }

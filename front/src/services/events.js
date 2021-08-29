@@ -17,7 +17,9 @@ export function send(name,data){
     }
     
     if(Object.keys(events).includes(name)){
-        Object.values(events[name]).forEach(cb => cb(data))
+        Object.values(events[name]).forEach(cb => 
+            cb(data)
+        )
     }
 }
 

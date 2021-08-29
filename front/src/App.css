@@ -4,6 +4,9 @@
 }
 
 .mouse-container {
+  position: fixed;
+  top : 0;
+  left : 0;
   display: flex;
   width : fit-content;
   z-index: 20;
@@ -14,6 +17,9 @@
   padding : 0.5em;
   border: 1px solid black;
   border-radius: 0.7rem;
+}
+.mouse-container > *:first-child{
+  background-color: rgba(255,255,255,0.8);
 }
 .mice{
   padding : 5px;
@@ -32,21 +38,27 @@
 
 
 .name-container{
-  z-index: 20;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
 }
+
 .name-item{
+  width: fit-content;
   z-index: 30;
+  display: block;
+  position: absolute;
 }
 
 .name-item:hover .edit-name{
-  display : inherit;;
+  display : inherit;
 }
 .edit-name{
   display : none
 }
 
 .layer-container{
-  background-color: rgba(255,255,255,0.5);
   z-index: 11;
   position: fixed;
   display: block;
@@ -56,12 +68,21 @@
   right: 0;
 }
 
+.layer-container > *{
+  width : fit-content;
+}
 
 .layer-item{
   display: block;
   width: 50px;
   min-height: 50px;
   cursor: pointer;
+  border-radius: 0.7rem;
+  background-color: rgba(255,255,255,0.5);
+}
+
+.layer-item-selected{
+  background-color: rgba(255,0,0,0.5)
 }
 
 .layer-item:hover{
@@ -70,7 +91,7 @@
 
 .layer-img img{
   z-index: -1;
-  position : fixed;
+  position : absolute;
   top : 0;
   left : 0;
   overflow: auto;
@@ -97,5 +118,5 @@
 
 .layer-controls > * {
   height: 2rem;
-  margin : 0.5rem
+  margin : 0.5rem;
 }

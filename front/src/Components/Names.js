@@ -2,7 +2,7 @@ import {io} from "socket.io-client";
 import {useState, useEffect} from "react";
 import * as events from "../services/events";
 import {On, send, sub} from "../services/events";
-import {useRoom} from "../Controller/useRoom";
+import {useLayer, useRoom} from "../Controller/useRoom";
 import {NameDTO} from "../DTOs/NameDTO";
 import {LayerDTO} from "../DTOs/LayerDTO";
 import {useGlobalMouseClick} from "../Controller/DOMEvents";
@@ -16,7 +16,9 @@ export function Names(props) {
     const [newName, setNewName] = useState(false)
     const [tmpPos, setTmpPos] = useState([0, 0])
     const [colorOpen, setColorOpen] = useState(false)
-    const names = room.layers[props.i].texts
+    const [activeLayerId,setActiveLayer] = useLayer()
+    const layerIndex = room.layers.findIndex(l => Number(l.id) === Number(activeLayerId))
+    const names = room.layers[layerIndex]?.texts ?? []
 
     useGlobalMouseClick(handleMouseClick)
     useGlobalMouseMove(handleMouseMove)
@@ -36,7 +38,7 @@ export function Names(props) {
 
         let pos = [e.clientX, e.clientY]
         let newRoom = {...room}
-        newRoom.layers[props.i].texts.push(new NameDTO("New Text", pos[0], pos[1]))
+        newRoom.layers[layerIndex].texts.push(new NameDTO("New Text", pos[0], pos[1]))
 
         send(On.snd_save, newRoom)
         setNewName(false)
@@ -48,7 +50,7 @@ export function Names(props) {
 
     const handleNameChange = (name, i) => {
         let newRoom = {...room}
-        newRoom.layers[props.i].texts[i].val = name
+        newRoom.layers[layerIndex].texts[i].val = name
 
         send(On.snd_save, newRoom)
     }
@@ -57,14 +59,14 @@ export function Names(props) {
 
     function dragStart(e, i) {
         offSet = [
-            room.layers[props.i].texts[i].pos[0] - e.clientX,
-            room.layers[props.i].texts[i].pos[1] - e.clientY
+            room.layers[layerIndex].texts[i].pos[0] - e.clientX,
+            room.layers[layerIndex].texts[i].pos[1] - e.clientY
         ]
     }
 
     function dragEnd(e, i) {
         let newRoom = {...room}
-        newRoom.layers[props.i].texts[i].pos = [
+        newRoom.layers[layerIndex].texts[i].pos = [
             e.clientX + offSet[0],
             e.clientY + offSet[1]
         ]
@@ -74,7 +76,7 @@ export function Names(props) {
     function editTextProp(e,i,val) {
         let newRoom = {...room}
         
-        newRoom.layers[props.i].texts[i][e] = val
+        newRoom.layers[layerIndex].texts[i][e] = val
 
         send(On.snd_save, newRoom)
     }
@@ -90,7 +92,7 @@ export function Names(props) {
     
     function editColor(e,i,close) {
         let newRoom = {...room}
-        newRoom.layers[props.i].texts[i].color = `rgba(${e.rgb.r},${e.rgb.g},${e.rgb.b},${e.rgb.a})`
+        newRoom.layers[layerIndex].texts[i].color = `rgba(${e.rgb.r},${e.rgb.g},${e.rgb.b},${e.rgb.a})`
 
         if(close) {
             send(On.snd_save, newRoom)
@@ -100,13 +102,13 @@ export function Names(props) {
     
     function deleteText(i){
         let newRoom = {...room}
-        newRoom.layers[props.i].texts.splice(i, 1)
+        newRoom.layers[layerIndex].texts.splice(i, 1)
 
         send(On.snd_save, newRoom)
     }
     
     function getNameEdit(i) {
-        const text = room.layers[props.i].texts[i]
+        const text = room.layers[layerIndex].texts[i]
         return <span className={"edit-name"}>
             <button onClick={x=>editTextProp('size',i,Number(text.size)+0.2)}>+</button>
             <button onClick={x=>editTextProp('size',i,Number(text.size)-0.2)}>-</button>
@@ -131,8 +133,6 @@ export function Names(props) {
             {names.map((name, i) => (
                 <span className={"name-item"}
                       key={i} style={{
-                    display: "block",
-                    position: "fixed",
                     left: name.pos[0],
                     top: name.pos[1]
                 }}>

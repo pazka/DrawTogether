@@ -6,6 +6,7 @@ import {On,send} from "./services/events";
 import SocketIOService from "./services/socket"
 import ImageDisplay from "./Components/ImageDisplay";
 import LayerControls from "./Components/Controls";
+import {Names} from "./Components/Names";
 
 SocketIOService()
 
@@ -16,6 +17,7 @@ function App() {
     
     return <div>
         <MouseDisplay/>
+        <Names/>
         <Layers/>
         <LayerControls/>
         <ImageDisplay/>
