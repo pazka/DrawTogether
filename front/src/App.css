@@ -46,15 +46,20 @@
 
 .name-item{
   width: fit-content;
+  min-width:5rem;
   z-index: 30;
   display: block;
   position: absolute;
 }
 
 .name-item:hover .edit-name{
+  position : absolute;
+  top : -10px ;
   display : inherit;
 }
 .edit-name{
+  position : absolute;
+  top : -10px ;
   display : none
 }
 
@@ -69,24 +74,28 @@
 }
 
 .layer-container > *{
-  width : fit-content;
+  width : auto;
 }
 
 .layer-item{
   display: block;
-  width: 50px;
+  min-width: 100px;
   min-height: 50px;
   cursor: pointer;
-  border-radius: 0.7rem;
+  border-radius: 0.3rem;
   background-color: rgba(255,255,255,0.5);
+
+  margin-top : 0.5em;
+  transition: all 0.3s;
 }
 
 .layer-item-selected{
-  background-color: rgba(255,0,0,0.5)
+  background-color: rgba(255,50,0,0.6);
 }
 
 .layer-item:hover{
-  border: solid 1px rgb(255,0,0)
+  background-color: rgba(255,50,0,0.2);
+  transition: all 0.3s;
 }
 
 .layer-img img{

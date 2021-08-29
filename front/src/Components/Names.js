@@ -141,7 +141,7 @@ export function Names(props) {
                                             onChange={e => handleNameChange(e.target.value, i)}/>
                     : <p
                         onDoubleClick={x => setEditIndex(i)}
-                        draggable={"true"}
+                        draggable={true}
                         onDragStart={(e) => {
                             dragStart(e, i)
                         }}
