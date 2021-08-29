@@ -1,25 +1,27 @@
-﻿let allEvents : any= {};
+﻿
+let events : any = {}
 
-// Add an observer to observers.
-export function sub(event : string,observer : Function)
-{
-    if(Object.keys(allEvents).includes(event)){
-        allEvents[event].push(observer);
-    }else{
-        allEvents[event] = [observer];
+export function sub(name: string,cb: Function){
+    if(!Object.keys(events).includes(name)){
+        events[name] = []
     }
+
+    events[name].push(cb) 
 }
 
-// Loops over observers and calls the update method on each observer.
-// The state object will call this method everytime it is updated.
-export function send(event : string, data : any)
-{
-    console.log(`[${event}]=`)
-    console.info(`${data}`)
-    console.log(`###`)
+export function send(name : string,data : any){
+    if(name !== On.MOUSE_ACTION){
+        console.group(`[${name}]`)
+        console.log(data)
+        console.groupEnd()
+    }
     
-    if(Object.keys(allEvents).includes(event)){
-        allEvents[event].forEach((observer : Function) => observer(event, data));
+    if(!Object.keys(events).includes(name)){
+        events[name] = []
+    }
+
+    if(Object.keys(events).includes(name)){
+        events[name].forEach((cb : Function) => cb(data))
     }
 }
 

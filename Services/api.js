@@ -39,7 +39,6 @@ exports.__esModule = true;
 var path = require("path");
 var multer = require("multer");
 var express = require("express");
-var fs = require("fs");
 var imageController_1 = require("../Controllers/imageController");
 var router = express.Router();
 var roomController = require('../Controllers/roomController');
@@ -87,35 +86,13 @@ router.get("/:roomId/img/:layerid", function (req, res) {
     });
 });
 router.post("/:roomId/:layerId/upload", upload.single("layerImg"), function (req, res) {
-    var tempPath = req.file.path;
-    var fileExt = path.extname(req.file.originalname);
-    var targetFolder = path.join(__dirname, "../front/build/uploads/" + req.params.roomId);
-    var targetPath = path.join(targetFolder, "" + req.params.layerId + fileExt);
-    if (!fs.existsSync(targetFolder)) {
-        fs.mkdirSync(targetFolder, { recursive: true });
-    }
-    if (!(0, imageController_1.isFormatValid)(fileExt)) {
-        fs.unlink(tempPath, function (err) {
-            if (err) {
-                res
-                    .status(403)
-                    .send(err.message);
-            }
-            res
-                .status(403)
-                .send("Only " + imageController_1.validFormats.join(', ') + " files are allowed!");
-        });
-        return;
-    }
-    fs.rename(tempPath, targetPath, function (err) {
-        if (err) {
-            res
-                .status(403)
-                .send(err.message);
-        }
+    (0, imageController_1.writeImage)(req.file.originalname, req.params.roomId, req.params.layerId, req.file.path).then(function (r) {
         res
-            .status(200)
-            .send("File uploaded!");
+            .sendStatus(200);
+    })["catch"](function (err) {
+        res
+            .status(403)
+            .send({ message: err });
     });
 });
 exports["default"] = router;

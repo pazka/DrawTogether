@@ -1,5 +1,6 @@
 ﻿import {getRoom, saveRoom} from "../../Controllers/roomController";
 import {RoomDTO} from "../../DTOs/RoomDTO";
+import {On, send, sub} from "../events";
 
 const iolib = require('socket.io')
 let io: any
@@ -56,12 +57,16 @@ function newSocketConnection(socket: any) {
     });
 
     socket.on(allEvents.saveRoom, async (room: RoomDTO) => {
-        io.to(currentRoom).emit(allEvents.loadRoom, await saveRoom(room))
+        await saveRoom(room)
     })
 
     socket.on('disconnect', () => {
         io.to(currentRoom).emit(allEvents.leave, {id: socket.id})
         console.log(`${socket.conn.remoteAddress} disconnected`);
+    });
+    
+    sub(On.EDIT_ROOM, (room : RoomDTO)=>{
+        io.to(room.id).emit(allEvents.loadRoom, room)
     });
 }
 

@@ -5,7 +5,10 @@ export default function ImageDisplay(props){
     let room = useRoom('layer'+props.i)
     let [activeLayerId,setActiveLaterId] = useLayer()
     
+    const layerIndex = room.layers.findIndex(l => Number(l.id) === Number(activeLayerId))
+    const imgPath = room.layers[layerIndex]?.imgPath 
+    
     return <div className={"layer-img"}>
-        <img src={`${getBaseUrl()}/uploads/${room.id}/${activeLayerId}.png`} alt={"ok"}/>
+        <img src={`${getBaseUrl()}${imgPath}`} alt={"currentLayerPath"}/>
     </div>
 }

@@ -1,22 +1,25 @@
 "use strict";
 exports.__esModule = true;
 exports.On = exports.send = exports.sub = void 0;
-var allEvents = {};
-function sub(event, observer) {
-    if (Object.keys(allEvents).includes(event)) {
-        allEvents[event].push(observer);
+var events = {};
+function sub(name, cb) {
+    if (!Object.keys(events).includes(name)) {
+        events[name] = [];
     }
-    else {
-        allEvents[event] = [observer];
-    }
+    events[name].push(cb);
 }
 exports.sub = sub;
-function send(event, data) {
-    console.log("[" + event + "]=");
-    console.info("" + data);
-    console.log("###");
-    if (Object.keys(allEvents).includes(event)) {
-        allEvents[event].forEach(function (observer) { return observer(event, data); });
+function send(name, data) {
+    if (name !== On.MOUSE_ACTION) {
+        console.group("[" + name + "]");
+        console.log(data);
+        console.groupEnd();
+    }
+    if (!Object.keys(events).includes(name)) {
+        events[name] = [];
+    }
+    if (Object.keys(events).includes(name)) {
+        events[name].forEach(function (cb) { return cb(data); });
     }
 }
 exports.send = send;

@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getAllRooms = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
+exports.getAllRooms = exports.addImgPathInRoom = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
 var RoomDTO_1 = require("../DTOs/RoomDTO");
 var events_1 = require("../Services/events");
@@ -109,12 +109,37 @@ function saveRoom(room) {
                     return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
+                    (0, events_1.send)(events_1.On.EDIT_ROOM, room);
                     return [2, room];
             }
         });
     });
 }
 exports.saveRoom = saveRoom;
+function addImgPathInRoom(roomId, layerId, path) {
+    return __awaiter(this, void 0, void 0, function () {
+        var room, layerIndex;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!allRoomIds.includes(roomId)) {
+                        throw Error('No Room with this id');
+                    }
+                    return [4, storage.getRoom(roomId)];
+                case 1:
+                    room = _a.sent();
+                    room.lastUpdate = Date.now();
+                    layerIndex = room.layers.findIndex(function (l) { return Number(l.id) === Number(layerId); });
+                    room.layers[layerIndex].imgPath = path;
+                    return [4, saveRoom(room)];
+                case 2:
+                    _a.sent();
+                    return [2];
+            }
+        });
+    });
+}
+exports.addImgPathInRoom = addImgPathInRoom;
 function getAllRooms() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {

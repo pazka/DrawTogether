@@ -16,7 +16,6 @@ export default function Layers() {
 
         send(On.snd_save, newRoom)
     }
-    
 
     return <div className={'layer-container'}>
         <div>
