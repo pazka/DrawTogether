@@ -48,12 +48,11 @@ var api_1 = require("./Services/api");
 var sockets = require("./Services/sockets");
 var roomController = require("./Controllers/roomController");
 var env_1 = require("./Services/env");
-var ENV = (0, env_1["default"])((process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD");
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin)
             return callback(null, true);
-        if (ENV.allowedOrigin.indexOf(origin) === -1) {
+        if (env_1["default"].allowedOrigin.indexOf(origin) === -1) {
             var msg = 'The CORS policy for this site does not ' +
                 'allow access from the specified Origin.';
             return callback(new Error(msg), false);
@@ -89,8 +88,8 @@ app.use('/api/room', api_1["default"]);
 Promise.all([
     sockets.init(httpServer)
 ]).then(function () {
-    httpServer.listen(ENV.PORT, function () {
-        console.log('Listening on ' + ENV.PORT);
+    httpServer.listen(env_1["default"].PORT, function () {
+        console.log('Listening on ' + env_1["default"].PORT);
     });
 });
 //# sourceMappingURL=index.js.map

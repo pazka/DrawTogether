@@ -36,7 +36,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var path = require("path");
 var multer = require("multer");
 var express = require("express");
 var imageController_1 = require("../Controllers/imageController");
@@ -44,6 +43,10 @@ var router = express.Router();
 var roomController = require('../Controllers/roomController');
 var upload = multer({
     dest: "uploads"
+});
+var avatars = multer({
+    dest: "avatars",
+    fieldSize: 1024
 });
 router.get('/all', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
@@ -72,16 +75,6 @@ router.get('/:roomid', function (req, res) {
                     _b.apply(_a, [_c.sent()]);
                     return [2];
             }
-        });
-    });
-});
-router.get("/:roomId/img/:layerid", function (req, res) {
-    return __awaiter(this, void 0, void 0, function () {
-        var targetPath;
-        return __generator(this, function (_a) {
-            targetPath = path.join(__dirname, "../front/build/uploads/" + req.params.roomId + "/" + req.params.layerid + ".png");
-            res.sendFile(targetPath);
-            return [2];
         });
     });
 });

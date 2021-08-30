@@ -25,6 +25,16 @@ async function safeSet(id: string, data: any) {
     }
 }
 
+async function safeRemove(id: string) {
+    if (!ready) {
+        return persist.init( /* options ... */).then(async (x) => {
+            return await persist.removeItem(id)
+        })
+    } else {
+        return persist.removeItem(id)
+    }
+}
+
 export async function getRooms() {
     return await safeGet('rooms')
 }
@@ -39,4 +49,8 @@ export async function getRoom(id: string) {
 
 export async function saveRoom(room: RoomDTO) {
     return await safeSet('room-' + room.id, room)
+}
+
+export async function removeRoom(id: string) {
+    return await safeRemove('room-' + id)
 }

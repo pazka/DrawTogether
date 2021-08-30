@@ -3,11 +3,36 @@ import {RoomDTO} from "../DTOs/RoomDTO";
 import {send, On} from "../Services/events";
 import {LayerDTO} from "../DTOs/LayerDTO";
 
+import env from "../Services/env"
+import {removeItem} from "node-persist";
+import {saveRooms} from "../Services/storage";
+
 let allRoomIds: string[] = []
 
 storage.getRooms().then(res => {
     allRoomIds = res ?? []
 });
+
+const roomCleanUpTimeout = setInterval(removeUnusedRooms, env.RoomCleanUpInterval * 1000)
+
+async function removeUnusedRooms() {
+    console.log("# Cleaning up room")
+    let newRoomIds = [...allRoomIds]
+    for (let index = allRoomIds.length -1; index >= 0 ; index--){
+        let room: RoomDTO = await getRoom(allRoomIds[index])
+        if (Date.now() - room.lastUpdate > env.RoomTTL * 1000) {
+            await removeItem(room.id)
+
+            newRoomIds.splice(index,1)
+            console.log(`# Cleaned ${room.id}, last update : ${new Date(room.lastUpdate).getUTCDate()}`)
+        }
+    }
+    
+    allRoomIds = newRoomIds
+    await saveRooms(newRoomIds)
+    console.log("# Room checked ")
+}
+
 
 export async function getRoom(id: string): Promise<RoomDTO> {
 

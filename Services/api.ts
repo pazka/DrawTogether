@@ -15,17 +15,18 @@ const upload = multer({
     // you might also want to set some limits: https://github.com/expressjs/multer#limits
 });
 
+const avatars = multer({
+    dest: "avatars",
+    fieldSize : 1024
+    // you might also want to set some limits: https://github.com/expressjs/multer#limits
+});
+
 router.get('/all', async function (req, res) {
     res.send(await roomController.getAllRooms())
 })
 
 router.get('/:roomid', async function (req, res) {
     res.send(await roomController.getRoom(req.params.roomid))
-})
-
-router.get("/:roomId/img/:layerid",async function (req, res) {
-    const targetPath = path.join(__dirname, `../front/build/uploads/${req.params.roomId}/${req.params.layerid}.png`);
-    res.sendFile(targetPath)
 })
 
 router.post("/:roomId/:layerId/upload", upload.single("layerImg" /* name attribute of <file> element in your form */),

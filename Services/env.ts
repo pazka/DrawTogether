@@ -4,4 +4,6 @@ import * as path from "path";
 // @ts-ignore
 const env : any = JSON.parse(fs.readFileSync(path.join(__dirname, "../env.json")) )
 
-export default (envName : string)=>env[envName ?? "PROD"]
+console.log("Environment : " + ((process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD"))
+
+export default env[(process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD"]

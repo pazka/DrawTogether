@@ -1,6 +1,7 @@
 ﻿import {getRoom, saveRoom} from "../../Controllers/roomController";
 import {RoomDTO} from "../../DTOs/RoomDTO";
 import {On, send, sub} from "../events";
+import env from "../env";
 
 const iolib = require('socket.io')
 let io: any
@@ -16,7 +17,7 @@ enum allEvents {
 export async function init(httpServer: any) {
     io = iolib(httpServer, {
         cors: {
-            origin: ["http://localhost:3000", "http://cptnchtn/"],
+            origin: env.allowedOrigin,
             methods: ["GET", "POST"]
         }
     });

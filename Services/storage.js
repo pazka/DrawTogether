@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.saveRoom = exports.getRoom = exports.saveRooms = exports.getRooms = void 0;
+exports.removeRoom = exports.saveRoom = exports.getRoom = exports.saveRooms = exports.getRooms = void 0;
 var persist = require("node-persist");
 var ready = false;
 function safeGet(id) {
@@ -76,6 +76,27 @@ function safeSet(id, data) {
             }
             else {
                 return [2, persist.setItem(id, data)];
+            }
+            return [2];
+        });
+    });
+}
+function safeRemove(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _this = this;
+        return __generator(this, function (_a) {
+            if (!ready) {
+                return [2, persist.init().then(function (x) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0: return [4, persist.removeItem(id)];
+                                case 1: return [2, _a.sent()];
+                            }
+                        });
+                    }); })];
+            }
+            else {
+                return [2, persist.removeItem(id)];
             }
             return [2];
         });
@@ -125,4 +146,15 @@ function saveRoom(room) {
     });
 }
 exports.saveRoom = saveRoom;
+function removeRoom(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4, safeRemove('room-' + id)];
+                case 1: return [2, _a.sent()];
+            }
+        });
+    });
+}
+exports.removeRoom = removeRoom;
 //# sourceMappingURL=storage.js.map

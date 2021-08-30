@@ -7,6 +7,16 @@ import {
     BrowserRouter,
     Route
 } from 'react-router-dom';
+
+if(process.env.NODE_ENV === 'production'){
+    console.log("Have fun looking at the code !")
+    console.log = ()=>{}
+    console.group = ()=>{}
+    console.groupEnd = ()=>{}
+    console.info = ()=>{}
+    console.warn = ()=>{}
+}
+
 ReactDOM.render(
     <BrowserRouter>
         <div>
@@ -20,3 +30,4 @@ ReactDOM.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+

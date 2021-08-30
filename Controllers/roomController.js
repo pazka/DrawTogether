@@ -35,16 +35,65 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 exports.__esModule = true;
 exports.getAllRooms = exports.addImgPathInRoom = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
 var RoomDTO_1 = require("../DTOs/RoomDTO");
 var events_1 = require("../Services/events");
 var LayerDTO_1 = require("../DTOs/LayerDTO");
+var env_1 = require("../Services/env");
+var node_persist_1 = require("node-persist");
+var storage_1 = require("../Services/storage");
 var allRoomIds = [];
 storage.getRooms().then(function (res) {
     allRoomIds = res !== null && res !== void 0 ? res : [];
 });
+var roomCleanUpTimeout = setInterval(removeUnusedRooms, env_1["default"].RoomCleanUpInterval * 1000);
+function removeUnusedRooms() {
+    return __awaiter(this, void 0, void 0, function () {
+        var newRoomIds, index, room;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log("# Cleaning up room");
+                    newRoomIds = __spreadArray([], allRoomIds, true);
+                    index = allRoomIds.length - 1;
+                    _a.label = 1;
+                case 1:
+                    if (!(index >= 0)) return [3, 5];
+                    return [4, getRoom(allRoomIds[index])];
+                case 2:
+                    room = _a.sent();
+                    if (!(Date.now() - room.lastUpdate > env_1["default"].RoomTTL * 1000)) return [3, 4];
+                    return [4, (0, node_persist_1.removeItem)(room.id)];
+                case 3:
+                    _a.sent();
+                    newRoomIds.splice(index, 1);
+                    console.log("# Cleaned " + room.id + ", last update : " + new Date(room.lastUpdate).getUTCDate());
+                    _a.label = 4;
+                case 4:
+                    index--;
+                    return [3, 1];
+                case 5:
+                    allRoomIds = newRoomIds;
+                    return [4, (0, storage_1.saveRooms)(newRoomIds)];
+                case 6:
+                    _a.sent();
+                    console.log("# Room checked ");
+                    return [2];
+            }
+        });
+    });
+}
 function getRoom(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {

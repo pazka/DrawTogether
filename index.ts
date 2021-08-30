@@ -14,16 +14,14 @@ import * as sockets from './Services/sockets'
 import router from "./Services/api";
 import * as roomController from './Controllers/roomController'
 import {getRoom} from "./Controllers/roomController";
-import getEnv from "./Services/env"
-
-const ENV : any = getEnv((process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD")
+import env from "./Services/env"
 
 app.use(cors({
     origin: function(origin, callback){
         // allow requests with no origin 
         // (like mobile apps or curl requests)
         if(!origin) return callback(null, true);
-        if(ENV.allowedOrigin.indexOf(origin) === -1){
+        if(env.allowedOrigin.indexOf(origin) === -1){
             var msg = 'The CORS policy for this site does not ' +
                 'allow access from the specified Origin.';
             return callback(new Error(msg), false);
@@ -57,8 +55,8 @@ app.use('/api/room',routes)
 Promise.all([
     sockets.init(httpServer)
 ]).then(()=>{
-    httpServer.listen(ENV.PORT, () => {
-        console.log('Listening on ' + ENV.PORT)
+    httpServer.listen(env.PORT, () => {
+        console.log('Listening on ' + env.PORT)
     });
 })
 
