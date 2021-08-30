@@ -83,12 +83,11 @@ export function Names(props) {
     }
 
     function getNewName() {
-        return newName ? <span style={{
-            display: "block",
-            position: "fixed",
+        return newName && <span className={"name-item"} 
+        style={{
             left: tmpPos[0],
             top: tmpPos[1]
-        }}> New Text</span> : null
+        }}> New Text</span> 
     }
     
     function editColor(e,i,close) {
