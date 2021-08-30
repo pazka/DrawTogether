@@ -1,5 +1,5 @@
 export function getBaseUrl() {
-    const url = window.location.href.match(/(https*:\/\/)(\w*)([:/]\d*)/)
+    const url = window.location.href.match(/(https*:\/\/)([\w.]*)([:/]\d*)/)
     const protocol = url[1]
     const domain = url[2]
     const port = url[3]

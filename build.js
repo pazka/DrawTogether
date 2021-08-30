@@ -25,8 +25,10 @@ function moveFiles(){
         'DTOs',
         'Controllers',
         'Services',
+        'env.json',
         'index.js',
-        'package.json']
+        'package.json',
+    ]
     toMove.forEach(folder => {
         fse.copySync(folder, 'build/' + folder, {overwrite: true}, (err) => {
             if (err) {
