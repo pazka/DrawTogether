@@ -47,8 +47,20 @@ var path = require("path");
 var api_1 = require("./Services/api");
 var sockets = require("./Services/sockets");
 var roomController = require("./Controllers/roomController");
-var PORT = 9001;
-app.use(cors());
+var env_1 = require("./Services/env");
+var ENV = (0, env_1["default"])((process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD");
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin)
+            return callback(null, true);
+        if (ENV.allowedOrigin.indexOf(origin) === -1) {
+            var msg = 'The CORS policy for this site does not ' +
+                'allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    }
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined'));
@@ -77,8 +89,8 @@ app.use('/api/room', api_1["default"]);
 Promise.all([
     sockets.init(httpServer)
 ]).then(function () {
-    httpServer.listen(PORT, function () {
-        console.log('Listening on ' + PORT);
+    httpServer.listen(ENV.PORT, function () {
+        console.log('Listening on ' + ENV.PORT);
     });
 });
 //# sourceMappingURL=index.js.map

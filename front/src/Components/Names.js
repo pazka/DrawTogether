@@ -36,7 +36,7 @@ export function Names(props) {
     function handleMouseClick(e) {
         if (!newName) return;
 
-        let pos = [e.clientX, e.clientY]
+        let pos = [window.scrollX + e.clientX,window.scrollY + e.clientY]
         let newRoom = {...room}
         newRoom.layers[layerIndex].texts.push(new NameDTO("New Text", pos[0], pos[1]))
 
@@ -45,7 +45,8 @@ export function Names(props) {
     }
 
     function handleMouseMove(e) {
-        setTmpPos([e.clientX, e.clientY])
+        let position = [window.scrollX + e.clientX,window.scrollY + e.clientY]
+        setTmpPos(position)
     }
 
     const handleNameChange = (name, i) => {

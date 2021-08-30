@@ -46,7 +46,7 @@
 
 .name-item{
   width: fit-content;
-  min-width:5rem;
+  min-width:10rem;
   z-index: 30;
   display: block;
   position: absolute;
@@ -54,7 +54,7 @@
 
 .name-item:hover .edit-name{
   position : absolute;
-  top : -10px ;
+  top : -1rem ;
   display : inherit;
 }
 .edit-name{
@@ -78,15 +78,22 @@
 }
 
 .layer-item{
-  display: block;
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  
+  
   min-width: 100px;
-  min-height: 50px;
   cursor: pointer;
   border-radius: 0.3rem;
   background-color: rgba(255,255,255,0.5);
 
   margin-top : 0.5em;
   transition: all 0.3s;
+}
+
+.layer-item > p{
+  width: 100%;
 }
 
 .layer-item-selected{

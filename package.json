@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.js",
     "prestart": "tsc -p ./tsconfig.json ",
-    "start": "node index.js",
+    "start": "node index.js dev",
+    "start-prod": "node index.js prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
