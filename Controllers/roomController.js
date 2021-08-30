@@ -78,7 +78,7 @@ function removeUnusedRooms() {
                 case 3:
                     _a.sent();
                     newRoomIds.splice(index, 1);
-                    console.log("# Cleaned " + room.id + ", last update : " + new Date(room.lastUpdate).getUTCDate());
+                    console.log("# Cleaned " + room.id + ", last update : " + new Date(room.lastUpdate));
                     _a.label = 4;
                 case 4:
                     index--;

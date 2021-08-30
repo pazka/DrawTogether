@@ -24,7 +24,7 @@ async function removeUnusedRooms() {
             await removeItem(room.id)
 
             newRoomIds.splice(index,1)
-            console.log(`# Cleaned ${room.id}, last update : ${new Date(room.lastUpdate).getUTCDate()}`)
+            console.log(`# Cleaned ${room.id}, last update : ${new Date(room.lastUpdate)}`)
         }
     }
     

@@ -80,7 +80,8 @@ app.get('/', function (req, res, next) {
 });
 app.use('/', express.static(path.join(__dirname, 'front/build/')));
 app.get('/:roomId', function (req, res, next) {
-    roomController.fetchOrCreateRoom(req.params.roomId);
+    if (!req.params.roomId.includes('.'))
+        roomController.fetchOrCreateRoom(req.params.roomId);
     next();
 });
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')));

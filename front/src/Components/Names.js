@@ -85,8 +85,8 @@ export function Names(props) {
     function getNewName() {
         return newName && <span className={"name-item"} 
         style={{
-            left: tmpPos[0],
-            top: tmpPos[1]
+            left: tmpPos[0] + 5,
+            top: tmpPos[1] + 5
         }}> New Text</span> 
     }
     
