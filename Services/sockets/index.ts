@@ -1,4 +1,4 @@
-﻿import {getRoom, saveRoom} from "../../Controllers/roomController";
+﻿import {getRoom, updateRoom} from "../../Controllers/roomController";
 import {RoomDTO} from "../../DTOs/RoomDTO";
 import {On, send, sub} from "../events";
 import env from "../env";
@@ -11,7 +11,8 @@ enum allEvents {
     leave = "leave",
     mouse = "mouse",
     loadRoom = "loadRoom",
-    saveRoom = "saveRoom"
+    saveRoom = "saveRoom",
+    error = "error"
 }
 
 export async function init(httpServer: any) {
@@ -58,9 +59,15 @@ function newSocketConnection(socket: any) {
     });
 
     socket.on(allEvents.saveRoom, async (room: RoomDTO) => {
-        await saveRoom(room)
-
-        io.to(room.id).emit(allEvents.loadRoom, room)
+        try {
+            updateRoom(room).then(res =>{
+                io.to(room.id).emit(allEvents.loadRoom, room)
+            }).catch(err =>{
+                socket.emit(allEvents.error, JSON.stringify(err))
+            })
+        }catch(err){
+            socket.emit(allEvents.error, JSON.stringify(err))
+        }
     })
 
     socket.on('disconnect', () => {
@@ -70,6 +77,10 @@ function newSocketConnection(socket: any) {
     
     sub(On.EDIT_ROOM, (room : RoomDTO)=>{
         io.to(room.id).emit(allEvents.loadRoom, room)
+    });
+
+    sub(On.ERROR, (error : any)=>{
+        io.broadcast.emit(allEvents.error, error)
     });
 }
 

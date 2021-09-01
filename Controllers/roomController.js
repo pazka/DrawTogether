@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 exports.__esModule = true;
-exports.getAllRooms = exports.addImgPathInRoom = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
+exports.getAllRooms = exports.addImgPathInRoom = exports.updateRoom = exports.saveRoom = exports.createNewRoom = exports.fetchOrCreateRoom = exports.getRoom = void 0;
 var storage = require("../Services/storage");
 var RoomDTO_1 = require("../DTOs/RoomDTO");
 var events_1 = require("../Services/events");
@@ -55,7 +55,8 @@ var node_persist_1 = require("node-persist");
 var storage_1 = require("../Services/storage");
 var allRoomIds = [];
 storage.getRooms().then(function (res) {
-    allRoomIds = res !== null && res !== void 0 ? res : [];
+    var _a;
+    allRoomIds = (_a = res) !== null && _a !== void 0 ? _a : [];
 });
 var roomCleanUpTimeout = setInterval(removeUnusedRooms, env_1["default"].RoomCleanUpInterval * 1000);
 function removeUnusedRooms() {
@@ -97,13 +98,13 @@ function removeUnusedRooms() {
 function getRoom(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            if (!allRoomIds.includes(id)) {
-                return [2, new RoomDTO_1.RoomDTO()];
+            switch (_a.label) {
+                case 0:
+                    if (!!allRoomIds.includes(id)) return [3, 1];
+                    return [2, new RoomDTO_1.RoomDTO()];
+                case 1: return [4, storage.getRoom(id)];
+                case 2: return [2, _a.sent()];
             }
-            else {
-                return [2, storage.getRoom(id)];
-            }
-            return [2];
         });
     });
 }
@@ -111,13 +112,13 @@ exports.getRoom = getRoom;
 function fetchOrCreateRoom(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            if (!allRoomIds.includes(id)) {
-                return [2, createNewRoom(id)];
+            switch (_a.label) {
+                case 0:
+                    if (!!allRoomIds.includes(id)) return [3, 1];
+                    return [2, createNewRoom(id)];
+                case 1: return [4, storage.getRoom(id)];
+                case 2: return [2, _a.sent()];
             }
-            else {
-                return [2, storage.getRoom(id)];
-            }
-            return [2];
         });
     });
 }
@@ -150,12 +151,7 @@ function saveRoom(room) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    if (!allRoomIds.includes(room.id)) {
-                        throw Error('No Room with this id');
-                    }
-                    room.lastUpdate = Date.now();
-                    return [4, storage.saveRoom(room)];
+                case 0: return [4, storage.saveRoom(room)];
                 case 1:
                     _a.sent();
                     return [2, room];
@@ -164,6 +160,32 @@ function saveRoom(room) {
     });
 }
 exports.saveRoom = saveRoom;
+function updateRoom(room) {
+    return __awaiter(this, void 0, void 0, function () {
+        var lastRoom;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!allRoomIds.includes(room.id)) {
+                        throw Error('No Room with this id');
+                    }
+                    return [4, storage.getRoom(room.id)];
+                case 1:
+                    lastRoom = _a.sent();
+                    if (Math.abs(Number(room.version) - Number(lastRoom.version)) > 10) {
+                        throw Error("You fell out of sync with the server : you(" + room.version + " < new(" + lastRoom.version);
+                    }
+                    room.lastUpdate = Date.now();
+                    room.version = Number(room.version) + 1;
+                    return [4, storage.saveRoom(room)];
+                case 2:
+                    _a.sent();
+                    return [2, room];
+            }
+        });
+    });
+}
+exports.updateRoom = updateRoom;
 function addImgPathInRoom(roomId, layerId, path) {
     return __awaiter(this, void 0, void 0, function () {
         var room, layerIndex;
@@ -179,11 +201,9 @@ function addImgPathInRoom(roomId, layerId, path) {
                     room.lastUpdate = Date.now();
                     layerIndex = room.layers.findIndex(function (l) { return Number(l.id) === Number(layerId); });
                     room.layers[layerIndex].imgPath = path;
-                    return [4, saveRoom(room)];
-                case 2:
-                    _a.sent();
-                    (0, events_1.send)(events_1.On.EDIT_ROOM, room);
-                    return [2];
+                    return [2, updateRoom(room).then(function (res) {
+                            (0, events_1.send)(events_1.On.EDIT_ROOM, room);
+                        })];
             }
         });
     });

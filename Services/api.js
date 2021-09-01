@@ -39,6 +39,7 @@ exports.__esModule = true;
 var multer = require("multer");
 var express = require("express");
 var imageController_1 = require("../Controllers/imageController");
+var events_1 = require("./events");
 var router = express.Router();
 var roomController = require('../Controllers/roomController');
 var upload = multer({
@@ -77,6 +78,15 @@ router.get('/:roomid', function (req, res) {
             }
         });
     });
+});
+router.post("/:roomId/import", function (req, res) {
+    var room = req.body;
+    room.id = req.params.roomId;
+    roomController.saveRoom(room)
+        .then(function (r) {
+        res.status(200).send(r);
+        (0, events_1.send)(events_1.On.EDIT_ROOM, room);
+    })["catch"](function (err) { return res.status(403).send(err); });
 });
 router.post("/:roomId/:layerId/upload", upload.single("layerImg"), function (req, res) {
     (0, imageController_1.writeImage)(req.file.originalname, req.params.roomId, req.params.layerId, req.file.path).then(function (r) {

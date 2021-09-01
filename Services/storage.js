@@ -38,67 +38,65 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 exports.removeRoom = exports.saveRoom = exports.getRoom = exports.saveRooms = exports.getRooms = void 0;
 var persist = require("node-persist");
+var events_1 = require("./events");
 var ready = false;
-function safeGet(id) {
+var isDequeuingJobs = false;
+var jobQueue = [];
+function recursivelyExecJobStack(nbFnToExec) {
+    if (nbFnToExec == 0) {
+        isDequeuingJobs = false;
+        return;
+    }
+    jobQueue.splice(0, 1)[0]().then(function () { return recursivelyExecJobStack(nbFnToExec - 1); });
+}
+var operationWorker = setInterval(function () {
+    if (jobQueue.length > 0 && !isDequeuingJobs) {
+        isDequeuingJobs = true;
+        recursivelyExecJobStack(jobQueue.length);
+    }
+}, 1);
+function safeOperation(cb) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!!ready) return [3, 1];
-                    return [2, persist.init().then(function (x) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4, persist.getItem(id)];
-                                    case 1: return [2, _a.sent()];
-                                }
-                            });
-                        }); })];
-                case 1: return [4, persist.getItem(id)];
-                case 2: return [2, _a.sent()];
+                    if (!!ready) return [3, 2];
+                    return [4, persist.init({})];
+                case 1:
+                    _a.sent();
+                    ready = true;
+                    _a.label = 2;
+                case 2:
+                    jobQueue.push(cb);
+                    return [2];
             }
         });
     });
 }
 function safeSet(id, data) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
-            if (!ready) {
-                return [2, persist.init().then(function (x) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4, persist.setItem(id, data)];
-                                case 1: return [2, _a.sent()];
-                            }
-                        });
-                    }); })];
-            }
-            else {
-                return [2, persist.setItem(id, data)];
-            }
-            return [2];
+            return [2, new Promise(function (resolve) {
+                    safeOperation(function () { return persist.setItem(id, data).then(resolve); });
+                })];
+        });
+    });
+}
+function safeGet(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2, new Promise(function (resolve) {
+                    safeOperation(function () { return persist.getItem(id).then(resolve); });
+                })];
         });
     });
 }
 function safeRemove(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
-            if (!ready) {
-                return [2, persist.init().then(function (x) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4, persist.removeItem(id)];
-                                case 1: return [2, _a.sent()];
-                            }
-                        });
-                    }); })];
-            }
-            else {
-                return [2, persist.removeItem(id)];
-            }
-            return [2];
+            return [2, new Promise(function (resolve) {
+                    safeOperation(function () { return persist.removeItem(id).then(resolve); });
+                })];
         });
     });
 }
@@ -137,10 +135,18 @@ function getRoom(id) {
 exports.getRoom = getRoom;
 function saveRoom(room) {
     return __awaiter(this, void 0, void 0, function () {
+        var e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4, safeSet('room-' + room.id, room)];
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4, safeSet('room-' + room.id, room)];
                 case 1: return [2, _a.sent()];
+                case 2:
+                    e_1 = _a.sent();
+                    (0, events_1.send)(events_1.On.ERROR, e_1);
+                    return [3, 3];
+                case 3: return [2];
             }
         });
     });

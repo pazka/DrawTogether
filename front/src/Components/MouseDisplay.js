@@ -57,18 +57,18 @@ export default function MouseDisplay() {
             <span style={{display: 'flex'}}>
                 <p>{m.name}</p>
             </span>
-            </span>
+        </span>
     }
 
     return (<div className={"mouse-container"}>
-            <div className={"info"}>
-                <p>Room name : <b>{getRoomName()}</b></p>
-                <p>{Object.values(mice).length + 1} users in this room.</p>
-                <p>
-                    <span> You are </span>
-                    <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
-                </p>
-            </div>
+                <div className={"info"}>
+                    <p>Room name : <b>{getRoomName()}</b></p>
+                    <p>{Object.values(mice).length + 1} users in this room.</p>
+                    <p>
+                        <span> You are </span>
+                        <input defaultValue={"Anon"} type="text" onChange={handleNameChange}/>
+                    </p>
+                </div>
 
             {Object.values(mice).map((m, i) => getUserMice(m, i))}
             {getMyMouse()}

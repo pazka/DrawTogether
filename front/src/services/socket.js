@@ -28,6 +28,11 @@ export default function SocketIOService(){
     socket.on("loadRoom",data => events.send(On.rcv_load,data))
 
     socket.on("mouse",(data)=>events.send(On.rcv_mouse,data))
+    
+    socket.on("error",(data)=> {
+        alert("An error occured on the server-side, you changes have not been persisted. Please try again later")
+        console.error(data)
+    })
 
     events.sub(On.snd_join,'sock',x => joinRoom(x))
     events.sub(On.snd_mouse,'sock',x => socket.emit("mouse",x))

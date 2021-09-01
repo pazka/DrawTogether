@@ -10,11 +10,13 @@ import {
 
 if(process.env.NODE_ENV === 'production'){
     console.log("Have fun looking at the code !")
-    console.log = ()=>{}
-    console.group = ()=>{}
-    console.groupEnd = ()=>{}
-    console.info = ()=>{}
-    console.warn = ()=>{}
+    if(window.location.href.split('?')[1] !== "debug"){
+        console.log = ()=>{}
+        console.group = ()=>{}
+        console.groupEnd = ()=>{}
+        console.info = ()=>{}
+        console.warn = ()=>{}
+    }
 }
 
 ReactDOM.render(

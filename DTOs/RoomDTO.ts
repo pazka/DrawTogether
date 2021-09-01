@@ -3,6 +3,7 @@
 export class RoomDTO {
     id : string
     lastUpdate : number = Date.now()
+    version : number = 0
     layers : LayerDTO[] = []
     
     constructor(){

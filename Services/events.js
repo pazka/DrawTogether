@@ -26,6 +26,7 @@ exports.send = send;
 var On = Object.freeze({
     NEW_ROOM: "NEW_ROOM",
     EDIT_ROOM: "EDIT_ROOM",
+    ERROR: "ERROR",
     NEW_IMG: "NEW_IMG",
     MOUSE_ACTION: "MOUSE_ACTION",
     TEXT_ACTION: "TEXT_ACTION"

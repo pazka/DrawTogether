@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "http": "0.0.1-security",
+    "js-queue": "^2.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
     "node-persist": "^3.1.0",

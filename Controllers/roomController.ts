@@ -10,7 +10,7 @@ import {saveRooms} from "../Services/storage";
 let allRoomIds: string[] = []
 
 storage.getRooms().then(res => {
-    allRoomIds = res ?? []
+    allRoomIds = res as any ?? []
 });
 
 const roomCleanUpTimeout = setInterval(removeUnusedRooms, env.RoomCleanUpInterval * 1000)
@@ -39,7 +39,7 @@ export async function getRoom(id: string): Promise<RoomDTO> {
     if (!allRoomIds.includes(id)) {
         return new RoomDTO()
     } else {
-        return storage.getRoom(id)
+        return await storage.getRoom(id) as any
     }
 }
 
@@ -48,7 +48,7 @@ export async function fetchOrCreateRoom(id: string): Promise<RoomDTO> {
     if (!allRoomIds.includes(id)) {
         return createNewRoom(id)
     } else {
-        return storage.getRoom(id)
+        return await storage.getRoom(id) as any
     }
 }
 
@@ -66,11 +66,23 @@ export async function createNewRoom(existId: string = null): Promise<RoomDTO> {
 }
 
 export async function saveRoom(room: RoomDTO): Promise<RoomDTO> {
+    await storage.saveRoom(room)
+
+    return room;
+}
+
+export async function updateRoom(room: RoomDTO): Promise<RoomDTO> {
     if (!allRoomIds.includes(room.id)) {
         throw Error('No Room with this id')
     }
 
+    let lastRoom : RoomDTO = await storage.getRoom(room.id) as any
+    if(Math.abs(Number(room.version) - Number(lastRoom.version)) > 10){
+        throw Error(`You fell out of sync with the server : you(${room.version} < new(${lastRoom.version}`)
+    }
+    
     room.lastUpdate = Date.now()
+    room.version = Number(room.version) + 1
     await storage.saveRoom(room)
 
     return room;
@@ -81,13 +93,14 @@ export async function addImgPathInRoom(roomId: string, layerId: number, path: st
         throw Error('No Room with this id')
     }
 
-    let room: RoomDTO = await storage.getRoom(roomId)
+    let room: RoomDTO = await storage.getRoom(roomId) as any
     room.lastUpdate = Date.now()
     const layerIndex = room.layers.findIndex(l => Number(l.id) === Number(layerId))
     room.layers[layerIndex].imgPath = path
 
-    await saveRoom(room)
-    send(On.EDIT_ROOM, room);
+    return updateRoom(room).then(res =>{
+        send(On.EDIT_ROOM, room);
+    })
 }
 
 export async function getAllRooms() {
