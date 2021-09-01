@@ -10,7 +10,7 @@ I still have to authorize fiel upload through the reverse proxy for a prettier d
 
 # Demo 
 
-[Go test it in production !](http://hosh.it:9001/Demo)
+[Go test it in production !](https://draw.hosh.it/Demo)
 
 # Tech
 
@@ -18,4 +18,4 @@ Made with Node, Node-persist, Express, Socket.IO & ReactJs
 
 # Why ?
 
-Made originaly to edit custom maps and play custom RPG with friends
+Made originally to edit custom maps and play custom RPG with friends

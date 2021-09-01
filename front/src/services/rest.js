@@ -1,15 +1,15 @@
 export function getBaseUrl() {
-    const url = window.location.href.match(/(https?:\/\/)([\w.]*)([:/]\d*)?/)
-    const protocol = url[1]
-    const domain = url[2]
-    const port = url[3]
+    const url = window.location.href.match(/(https?:\/\/)([\w.]*)([:]\d*)?\/(\w*)/)
+    const protocol = url[1] ?? ""
+    const domain = url[2] ?? ""
+    const port = url[3] ?? ""
     const dynamicUrl = protocol + domain + port
 
     return (process.env.NODE_ENV !== 'production') ? "http://localhost:9001" : dynamicUrl
 }
 
 export function getRoomName(){
-   return window.location.href.match(/(https?:\/\/)([\w.]*)([:/]\d*)?\/(\w*)/)[4]
+   return window.location.href.match(/(https?:\/\/)([\w.]*)([:]\d*)?\/(\w*)/)[4]
 }
 
 async function sendFile(fromFile, urlPath) {

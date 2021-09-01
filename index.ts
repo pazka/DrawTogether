@@ -29,7 +29,8 @@ app.use(cors({
         return callback(null, true);
     }
 }));
-app.use(bodyParser.json());
+app.options('*', cors())
+app.use(bodyParser.json({limit:'100mb'}));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined'));
 
