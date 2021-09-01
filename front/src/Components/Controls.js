@@ -72,15 +72,25 @@ export default function LayerControls() {
     }
 
     let debug = 0
+    let debugInterval
     function _debug(){
-        debug = setInterval(()=>{
-            send(On.snd_save,room)
-            if(debug++ > 1000)
-                clearInterval(debug)
-        },1)
+        if(debugInterval) {
+            debug = 1000
+            return;
+        }
+        
+        debugInterval = setInterval(()=>{
+            let position = {x: 1000 + 200 * Math.sin(Date.now() / 2000), y: 1000 + 200 *Math.cos(Date.now() / 2000) }
+            send(On.snd_mouse, {name: 'DEBUG', ...position})
+            if(debug++ > 1000) {
+                clearInterval(debugInterval)
+                debug = 0
+            }
+        },50)
     }
     
     return <div className={"layer-controls"}>
+        {process.env.NODE_ENV !== 'production' && <button onClick={_debug}> Debug</button>}
         <button onClick={createNewName }> New Text</button>
         <form>
             <label htmlFor="layerImg">Background => </label>
