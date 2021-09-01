@@ -10,7 +10,7 @@ I still have to authorize fiel upload through the reverse proxy for a prettier d
 
 # Demo 
 
-[Go test it in production !](http://hosh.it:9001/)
+[Go test it in production !](http://hosh.it:9001/Demo)
 
 # Tech
 
