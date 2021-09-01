@@ -6,10 +6,14 @@ Scalabitlity is handled by the browser.
 
 Enter a custom URL to create a new whiteboard !
 
+# Demo 
+
+[Go test it in production !](http://hosh.it:9001/)
+
 # Tech
 
 Made with Node, Node-persist, Express, Socket.IO & ReactJs
 
-# WHy ?
+# Why ?
 
 Made originaly to edit custom maps and play custom RPG with friends
