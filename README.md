@@ -6,6 +6,8 @@ Scalabitlity is handled by the browser.
 
 Enter a custom URL to create a new whiteboard !
 
+I still have to authorize fiel upload through the reverse proxy for a prettier domain name
+
 # Demo 
 
 [Go test it in production !](http://hosh.it:9001/)
