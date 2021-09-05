@@ -138,7 +138,6 @@
   position : fixed;
   width : fit-content;
   height: fit-content;
-  padding: 0.5rem;
   min-width : 200px;
   top: 0;
   left: 0;
@@ -151,6 +150,10 @@
 }
 
 .layer-controls > * {
+  border-right : solid 1px gray
+}
+.layer-controls > * > *{
   height: 2rem;
   margin : 0.5rem;
+  padding: 0.5rem;
 }
