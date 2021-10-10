@@ -20,7 +20,13 @@ async function removeUnusedRooms() {
     let newRoomIds = [...allRoomIds]
     for (let index = allRoomIds.length -1; index >= 0 ; index--){
         let room: RoomDTO = await getRoom(allRoomIds[index])
-        if (Date.now() - room.lastUpdate > env.RoomTTL * 1000) {
+        console.log(`# Checking room ${room.id}`)
+        
+        if(room.cantDie){
+            console.log(`The room : ${room.id} can't die !`)
+        }
+    
+        if (!room.cantDie && (Date.now() - room.lastUpdate > env.RoomTTL * 1000)) {
             await removeItem(room.id)
 
             newRoomIds.splice(index,1)

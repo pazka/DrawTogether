@@ -74,7 +74,11 @@ function removeUnusedRooms() {
                     return [4, getRoom(allRoomIds[index])];
                 case 2:
                     room = _a.sent();
-                    if (!(Date.now() - room.lastUpdate > env_1["default"].RoomTTL * 1000)) return [3, 4];
+                    console.log("# Checking room " + room.id);
+                    if (room.cantDie) {
+                        console.log("The room : " + room.id + " can't die !");
+                    }
+                    if (!(!room.cantDie && (Date.now() - room.lastUpdate > env_1["default"].RoomTTL * 1000))) return [3, 4];
                     return [4, (0, node_persist_1.removeItem)(room.id)];
                 case 3:
                     _a.sent();

@@ -69,7 +69,7 @@ export default function LayerControls() {
 
     function handleNewProject() {
         var name = window.prompt("Name of new project : ")
-        window.location.replace(name)
+        window.location.replace('/'+name)
     }
 
     let debug = 0
