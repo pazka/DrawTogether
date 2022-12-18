@@ -64,7 +64,7 @@ export function getBaseUrl() {
     const port = url[3] ?? ""
     const dynamicUrl = protocol + domain + port
 
-    return config.debug ? config.baseUrl : dynamicUrl
+    return config.debug ? `${config.host}:${config.port}` : dynamicUrl
 }
 
 

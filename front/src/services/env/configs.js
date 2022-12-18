@@ -2,11 +2,13 @@
     DEV: {
         name: "DEV",
         debug: true,
-        baseUrl: "http://localhost:8080"
+        host: "http://localhost",
+        port : 8080
     },
     PROD: {
         name: "PROD",
-        debug: false
+        debug: false,
+        port:80
     }
 })
 
