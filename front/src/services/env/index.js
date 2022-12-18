@@ -23,7 +23,7 @@ function update() {
         currentEnvironment = configs[queries.env.toUpperCase()]
 
         //case env is specified env constants
-    } else if (process.env.NODE_ENV === "development" || process.env.REACT_APP_STAGE !== "prod") {
+    } else if (window.location.href.includes("localhost")) {
         currentEnvironment = configs.DEV
     } else {
         currentEnvironment = configs.PROD

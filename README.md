@@ -17,3 +17,24 @@ Made with Node, Node-persist, Express, Socket.IO & ReactJs
 # Why ?
 
 Made originally to edit custom maps and play custom RPG with friends
+
+# How to run
+
+## Docker
+
+```bash
+docker run -p 9001:9001 -d --name drawtogether pazka/drawtogether:latest -v ./uploads:/app/front/build/uploads
+```
+
+```.yml
+version: '3'
+
+services:
+  drawtogether:
+    container_name: drawtogether
+    image: pazka/drawtogether:latest
+    ports:
+      - "9001:80"
+    volumes:
+      - ./uploads:/app/front/build/uploads
+```

@@ -3,21 +3,25 @@ const fse = require('fs-extra');
 const exec = require('child_process').exec
 const execSync = require('child_process').execSync
 
-console.log("# Building front")
+buildFront()
+moveFiles()
+buildDockerImage()
 
-let res = exec('cd front && npm run build && cd ..', (error, stdout, stderr) => {
-    if (error) {
-        console.error(`exec error: ${error}`);
-        return;
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
-    moveFiles()
-})
+function buildFront() {
+    console.log("# Building front")
+    execSync('cd front && npm run build && cd ..', (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
+    })
+}
 
-function moveFiles(){
+function moveFiles() {
     console.log("# Moving files")
-    if(fs.existsSync('build'))
+    if (fs.existsSync('build'))
         execSync('rm -Rf build && mkdir build')
 
     const toMove = [
@@ -35,5 +39,18 @@ function moveFiles(){
                 console.error(err);
             }
         });
+    })
+}
+
+function buildDockerImage(){
+    console.log("# Building docker image")
+    execSync('docker build -t pazka/drawtogether . && docker push pazka/drawtogether', (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return;
+        }
+        
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
     })
 }
