@@ -10,15 +10,15 @@ import {useGlobalKeypress, useGlobalMouseMove} from "../Controller/DOMEvents";
 import {SketchPicker} from "react-color";
 
 
-export function Names(props) {
-    let room = useRoom('names')
+export function DynamicTexts(props) {
+    let room = useRoom('dynamicTexts')
     const [editIndex, setEditIndex] = useState(-1)
     const [newName, setNewName] = useState(false)
     const [tmpPos, setTmpPos] = useState([0, 0])
     const [colorOpen, setColorOpen] = useState(false)
     const [activeLayerId, setActiveLayer] = useLayer()
     const layerIndex = room.layers.findIndex(l => Number(l.id) === Number(activeLayerId))
-    const names = room.layers[layerIndex]?.texts ?? []
+    const dynamicTexts = room.layers[layerIndex]?.texts ?? []
 
     useGlobalMouseClick(handleMouseClick)
     useGlobalMouseMove(handleMouseMove)
@@ -28,7 +28,7 @@ export function Names(props) {
         }
     })
 
-    sub(On.ui_newName, "names", () => {
+    sub(On.ui_newName, "dynamicTexts", () => {
         setNewName(true)
         setEditIndex(-1)
     })
@@ -49,9 +49,9 @@ export function Names(props) {
         setTmpPos(position)
     }
 
-    const handleNameChange = (name, i) => {
+    const handleNameChange = (dynamicText, i) => {
         let newRoom = {...room}
-        newRoom.layers[layerIndex].texts[i].val = name
+        newRoom.layers[layerIndex].texts[i].val = dynamicText
 
         send(On.snd_save, newRoom)
     }
@@ -87,7 +87,7 @@ export function Names(props) {
     }
 
     function getNewName() {
-        return newName && <span className={"name-item"}
+        return newName && <span className={"dynamicText-item"}
                                 style={{
                                     left: tmpPos[0] + 5,
                                     top: tmpPos[1] + 5
@@ -113,8 +113,8 @@ export function Names(props) {
 
     function getNameEdit(i) {
         const text = room.layers[layerIndex].texts[i]
-        return <span className={"edit-name-container"}>
-            <span className={"edit-name-item"}>
+        return <span className={"edit-dynamicText-container"}>
+            <span className={"edit-dynamicText-item"}>
             <button onClick={x => editTextProp('size', i, Number(text.size ?? 1) + 0.2)}>+</button>
             <button onClick={x => editTextProp('size', i, Number(text.size ?? 1) - 0.2)}>-</button>
             <button onClick={x => editTextProp('width', i, Number(text.width ?? 1) + 0.2)}>⭠⭢</button>
@@ -138,26 +138,26 @@ export function Names(props) {
     }
 
     return (
-        <div className={"name-container"}>
+        <div className={"dynamicText-container"}>
             {getNewName()}
-            {names.map((name, i) => (
-                <span className={"name-item"}
+            {dynamicTexts.map((dynamicText, i) => (
+                <span className={"dynamicText-item"}
                       key={i} style={{
-                    left: name.pos[0],
-                    top: name.pos[1]
+                    left: dynamicText.pos[0],
+                    top: dynamicText.pos[1]
                 }}>
                 {(editIndex === i) ? <input onBlur={x => setEditIndex(-1)}
-                                            defaultValue={name.val}
+                                            defaultValue={dynamicText.val}
                                             onChange={e => handleNameChange(e.target.value, i)}/>
                     : <p
                         onDoubleClick={x => setEditIndex(i)}
                         style={{
-                            color: name.color,
-                            fontSize: (name.size ?? 1) + 'rem',
-                            width: (name.width ?? 1) * name.size * 5 + 'rem',
-                            transform: "rotate(" + (name.rot ?? 0) + "deg)",
-                            fontWeight: name.bold ? 'bold' : 'normal',
-                            textDecoration: name.underline ? 'underline' : 'none',
+                            color: dynamicText.color,
+                            fontSize: (dynamicText.size ?? 1) + 'rem',
+                            width: (dynamicText.width ?? 1) * dynamicText.size * 5 + 'rem',
+                            transform: "rotate(" + (dynamicText.rot ?? 0) + "deg)",
+                            fontWeight: dynamicText.bold ? 'bold' : 'normal',
+                            textDecoration: dynamicText.underline ? 'underline' : 'none',
                         }}
 
                         draggable={true}
@@ -166,7 +166,7 @@ export function Names(props) {
                         }}
                         onDragEnd={(e) => {
                             dragEnd(e, i)
-                        }}>{name.val}</p>
+                        }}>{dynamicText.val}</p>
                 }
                     {getNameEdit(i)}
                 </span>

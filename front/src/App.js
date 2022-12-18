@@ -6,7 +6,8 @@ import {On,send} from "./services/events";
 import SocketIOService from "./services/socket"
 import ImageDisplay from "./Components/ImageDisplay";
 import LayerControls from "./Components/Controls";
-import {Names} from "./Components/Names";
+import {DynamicTexts} from "./Components/DynamicTexts";
+import {isPresentationMode} from "./services/env";
 
 SocketIOService()
 
@@ -15,12 +16,13 @@ function App() {
     const roomId = location.pathname.split('/')[1]
     send(On.snd_join,roomId)
     
+    
     return <div>
         <MouseDisplay/>
-        <Names/>
+        <DynamicTexts/>
         <Layers/>
-        <LayerControls/>
-        <ImageDisplay/>
+        {!isPresentationMode() && <LayerControls/>}
+        {!isPresentationMode() && <ImageDisplay/>}
     </div>;
 }
 

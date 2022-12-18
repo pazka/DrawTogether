@@ -1,5 +1,5 @@
-import {getBaseUrl} from "../services/rest";
 import {useRoom, useLayer} from "../Controller/useRoom";
+import {getBaseUrl} from "../services/env";
 
 export default function ImageDisplay(props) {
     let room = useRoom('layer' + props.i)

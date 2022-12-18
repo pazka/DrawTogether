@@ -1,7 +1,7 @@
 import {io} from "socket.io-client";
 import * as events from "./events";
 import {On} from "./events";
-import {getBaseUrl} from "./rest";
+import {getBaseUrl} from "./env";
 
 let socket;
 let currentRoom
