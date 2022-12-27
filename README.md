@@ -37,4 +37,5 @@ services:
       - "9001:80"
     volumes:
       - ./uploads:/app/front/build/uploads
+      - ./persist:/app/.node-persist
 ```

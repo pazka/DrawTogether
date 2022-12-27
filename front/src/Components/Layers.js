@@ -2,6 +2,7 @@ import {useLayer,useRoom} from "../Controller/useRoom";
 import {On, send} from "../services/events";
 import {LayerDTO} from "../DTOs/LayerDTO";
 import Layer from "./Layer";
+import {isPresentationMode} from "../services/env";
 
 export default function Layers() {
     let room = useRoom("ok")
@@ -13,6 +14,7 @@ export default function Layers() {
     }
     
     function handleAddLayer() {
+        if (isPresentationMode()) return;
         let newRoom = {...room}
         newRoom.layers.push(new LayerDTO(Math.max.apply(Math, newRoom.layers.map(function (l) {
             return l.id;

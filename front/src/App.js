@@ -6,7 +6,7 @@ import {On,send} from "./services/events";
 import SocketIOService from "./services/socket"
 import ImageDisplay from "./Components/ImageDisplay";
 import LayerControls from "./Components/Controls";
-import {DynamicTexts} from "./Components/DynamicTexts";
+import {Names} from "./Components/Names";
 import {isPresentationMode} from "./services/env";
 
 SocketIOService()
@@ -19,7 +19,7 @@ function App() {
     
     return <div>
         <MouseDisplay/>
-        <DynamicTexts/>
+        <Names/>
         <Layers/>
         {!isPresentationMode() && <LayerControls/>}
         {!isPresentationMode() && <ImageDisplay/>}
