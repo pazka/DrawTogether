@@ -10,6 +10,10 @@
     "start-prod": "node index.js prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "overrides": {
+    "minimist": "^1.2.8",
+    "socket.io-parser": "^4.2.4"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
