@@ -1,0 +1,49 @@
+# security-autofix.yml — drop into .github/workflows/ of each service repo
+# AFTER the owner installs github.com/apps/claude on pazka repos.
+# On a failed deploy.yml run (Trivy CRITICAL gate), opens/refreshes an issue
+# mentioning @claude so the Claude GitHub App picks it up and proposes a fix PR.
+name: security-autofix
+
+on:
+  workflow_run:
+    workflows: ["build-scan-push"]
+    types: [completed]
+
+permissions:
+  issues: write
+  actions: read
+
+jobs:
+  open-issue:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or refresh CVE issue mentioning @claude
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const title = 'Trivy CRITICAL gate failed — CVE remediation needed';
+            const body = [
+              `The security gate failed on \`${run.head_branch}\` @ \`${run.head_sha.slice(0,7)}\`.`,
+              `Run: ${run.html_url}`,
+              '',
+              '@claude please read the Trivy findings in the failed run above and open a PR that',
+              'remediates the CRITICAL vulnerabilities with the smallest safe change',
+              '(base-image bump and/or dependency pins). Do not change application behavior.',
+            ].join('\n');
+            const {data: issues} = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'security-autofix',
+            });
+            if (issues.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issues[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['security-autofix'],
+              });
+            }
