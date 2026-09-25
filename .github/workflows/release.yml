@@ -1,0 +1,112 @@
+name: release
+# Release pipeline (hosh.it, P3.3): build -> Trivy (CRITICAL) -> push ghcr -> optional Dokploy webhook.
+#
+# Triggers
+#   - push of a tag matching v*          -> always runs. Pushes :<tag> and :<full sha>.
+#                                           :latest is pushed ONLY if the tag has no '-'
+#                                           (so prerelease tags like v1.0.0-rc.1 NEVER touch :latest).
+#   - push to master (default branch) -> runs ONLY if repo variable DEPLOY_TRIGGER == 'main'
+#                                           (opt-in; unset = tag-only releases, the job is skipped).
+#                                           Pushes :main-<shortsha>, :<full sha> and :latest.
+#   - workflow_dispatch                  -> always runs. From a tag ref it behaves like a tag push;
+#                                           from a branch ref it behaves like branch mode (:latest!).
+#
+# Knobs (Settings -> Secrets and variables -> Actions)
+#   vars.DEPLOY_TRIGGER   'main' = every push to master releases :latest. Unset (default) = tags only.
+#   vars.TRIVY_POLICY     'warn' = CRITICAL findings are reported but do not block the push.
+#                         Anything else / unset (default) = CRITICAL findings fail the run (nothing pushed).
+#   secrets.DOKPLOY_WEBHOOK  Dokploy deploy-webhook URL, POSTed after :latest is pushed.
+#                         Unset/empty = a notice is printed and the run still succeeds.
+#
+# The build-scan-push workflow (deploy.yml) is untouched: it keeps pushing :ci + :<sha> only.
+on:
+  push:
+    tags: ['v*']
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  IMAGE: ghcr.io/pazka/drawtogether
+jobs:
+  release:
+    # Tag pushes and manual runs always go; branch pushes only when DEPLOY_TRIGGER == 'main'.
+    if: github.event_name != 'push' || github.ref_type == 'tag' || vars.DEPLOY_TRIGGER == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: compute release tags
+        id: meta
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" = "tag" ]; then
+            if ! printf '%s' "$REF_NAME" | grep -Eq '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'; then
+              echo "::error::git tag '$REF_NAME' is not a valid docker tag"
+              exit 1
+            fi
+            primary="$REF_NAME"
+            case "$REF_NAME" in
+              *-*) latest=false ;;   # prerelease (v1.0.0-rc.1 ...) -> never :latest
+              *)   latest=true ;;
+            esac
+          else
+            primary="main-${SHA:0:7}"
+            latest=true
+          fi
+          echo "primary=$primary" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "release tags: :$primary :$SHA (latest=$latest)"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/pazka/drawtogether:candidate
+      - name: Trivy scan (CRITICAL; blocking unless TRIVY_POLICY=warn)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/pazka/drawtogether:candidate
+          severity: CRITICAL
+          exit-code: ${{ vars.TRIVY_POLICY == 'warn' && '0' || '1' }}
+          ignore-unfixed: true
+      - name: push release tags
+        env:
+          PRIMARY: ${{ steps.meta.outputs.primary }}
+          LATEST: ${{ steps.meta.outputs.latest }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker tag "$IMAGE:candidate" "$IMAGE:$PRIMARY"
+          docker tag "$IMAGE:candidate" "$IMAGE:$SHA"
+          docker push "$IMAGE:$PRIMARY"
+          docker push "$IMAGE:$SHA"
+          if [ "$LATEST" = "true" ]; then
+            docker tag "$IMAGE:candidate" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          else
+            echo "::notice::prerelease tag $PRIMARY -> :latest left untouched"
+          fi
+      - name: trigger Dokploy deploy
+        if: steps.meta.outputs.latest == 'true'
+        env:
+          DOKPLOY_WEBHOOK: ${{ secrets.DOKPLOY_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOKPLOY_WEBHOOK:-}" ]; then
+            echo "::notice::DOKPLOY_WEBHOOK secret not set -> :latest pushed, no deploy triggered"
+            exit 0
+          fi
+          curl -fsS -X POST "$DOKPLOY_WEBHOOK"
