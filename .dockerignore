@@ -1,0 +1,5 @@
+.git
+node_modules
+front/node_modules
+front/build
+.env*
