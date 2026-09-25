@@ -36,17 +36,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var path = require("path");
 var multer = require("multer");
 var express = require("express");
 var imageController_1 = require("../Controllers/imageController");
 var events_1 = require("./events");
 var router = express.Router();
 var roomController = require('../Controllers/roomController');
+var uploadTmpDir = path.join(__dirname, "../front/build/uploads/.tmp");
 var upload = multer({
-    dest: "uploads"
+    dest: uploadTmpDir
 });
 var avatars = multer({
-    dest: "avatars",
+    dest: uploadTmpDir,
     fieldSize: 1024
 });
 router.get('/all', function (req, res) {
