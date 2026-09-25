@@ -12,13 +12,19 @@ const router = express.Router()
 const roomController = require('../Controllers/roomController')
 
 
+// Multer temp files must live on the same filesystem as the final upload folder
+// (imageController renames them into ../front/build/uploads/<roomId>, which is a bind
+// mount in production: a rename across mounts fails with EXDEV). It also keeps multer's
+// startup mkdir inside a writable volume when the container runs as non-root.
+const uploadTmpDir = path.join(__dirname, "../front/build/uploads/.tmp");
+
 const upload = multer({
-    dest: "uploads"
+    dest: uploadTmpDir
     // you might also want to set some limits: https://github.com/expressjs/multer#limits
 });
 
 const avatars = multer({
-    dest: "avatars",
+    dest: uploadTmpDir,
     fieldSize : 1024
     // you might also want to set some limits: https://github.com/expressjs/multer#limits
 });
