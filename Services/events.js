@@ -1,17 +1,18 @@
 "use strict";
-exports.__esModule = true;
-exports.On = exports.send = exports.sub = void 0;
-var events = {};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.On = void 0;
+exports.sub = sub;
+exports.send = send;
+let events = {};
 function sub(name, cb) {
     if (!Object.keys(events).includes(name)) {
         events[name] = [];
     }
     events[name].push(cb);
 }
-exports.sub = sub;
 function send(name, data) {
     if (name !== On.MOUSE_ACTION) {
-        console.group("[" + name + "]");
+        console.group(`[${name}]`);
         console.log(data);
         console.groupEnd();
     }
@@ -19,11 +20,10 @@ function send(name, data) {
         events[name] = [];
     }
     if (Object.keys(events).includes(name)) {
-        events[name].forEach(function (cb) { return cb(data); });
+        events[name].forEach((cb) => cb(data));
     }
 }
-exports.send = send;
-var On = Object.freeze({
+const On = Object.freeze({
     NEW_ROOM: "NEW_ROOM",
     EDIT_ROOM: "EDIT_ROOM",
     ERROR: "ERROR",

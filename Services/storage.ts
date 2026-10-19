@@ -1,6 +1,6 @@
 ﻿import {RoomDTO} from "../DTOs/RoomDTO";
 
-import * as persist from 'node-persist'
+import persist = require('node-persist')
 import {On, send} from "./events";
 
 let ready = false

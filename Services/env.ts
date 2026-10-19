@@ -1,5 +1,5 @@
-﻿import * as fs from 'fs'
-import * as path from "path";
+﻿import fs = require('fs')
+import path = require("path");
 
 // @ts-ignore
 const env : any = JSON.parse(fs.readFileSync(path.join(__dirname, "../env.json")) )

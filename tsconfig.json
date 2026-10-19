@@ -1,6 +1,10 @@
 ﻿{
   "compilerOptions": {
     "module": "commonjs",
+    "target": "es2015",
+    "strict": false,
+    "types": ["node"],
+    "newLine": "crlf",
     "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,

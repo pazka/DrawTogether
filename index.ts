@@ -1,13 +1,13 @@
 
-import * as express from 'express'
+import express = require('express')
 const app = express()
-import * as http from 'http'
+import http = require('http')
 const httpServer = http.createServer(app);
 
-import * as cors from 'cors'
-import * as bodyParser from 'body-parser'
-import * as morgan from 'morgan'
-import * as path from 'path'
+import cors = require('cors')
+import bodyParser = require('body-parser')
+import morgan = require('morgan')
+import path = require('path')
 
 import routes from './Services/api'
 import * as sockets from './Services/sockets'

@@ -1,9 +1,9 @@
-﻿import * as path from "path";
+﻿import path = require("path");
 
 const multer = require("multer");
 
-import * as express from 'express'
-import * as fs from "fs";
+import express = require('express')
+import fs = require("fs");
 import {isFormatValid, validFormats, writeImage} from "../Controllers/imageController";
 import {RoomDTO} from "../DTOs/RoomDTO";
 import {On, send} from "./events";
