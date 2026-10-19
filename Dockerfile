@@ -14,11 +14,7 @@ COPY front/ ./
 RUN npm run build
 
 # ---- Stage 2: runtime ----
-FROM node:20-alpine
-
-# Upgrade bundled npm: npm 10 ships tar 6.x (CVE-2026-59873); npm 11.18+ ships tar >= 7.5.19
-# (npm@12 requires node >= 22, so pin the npm 11 line)
-RUN npm install -g npm@11
+FROM node:26-alpine
 
 # Create app directory
 WORKDIR /app
@@ -26,7 +22,7 @@ WORKDIR /app
 # Install app dependencies
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci --no-audit --no-fund
 
 # Bundle app source
 COPY . .
