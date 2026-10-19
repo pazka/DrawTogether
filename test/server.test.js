@@ -130,6 +130,29 @@ test('CORS: allowed origin gets the header, foreign origin is refused', async ()
     assert.equal(ko.status, 500)
 })
 
+test('CORS preflight: OPTIONS on any path answers 204 for an allowed origin, 500 for a foreign one', async () => {
+    for (const p of ['/', '/api/room/all', '/api/room/abc/1/upload', '/some/deep/path']) {
+        const ok = await fetch(BASE + p, {method: 'OPTIONS', headers: {
+            origin: 'http://localhost:3000', 'access-control-request-method': 'POST'}})
+        assert.equal(ok.status, 204, p)
+        assert.equal(ok.headers.get('access-control-allow-origin'), 'http://localhost:3000', p)
+        assert.match(ok.headers.get('access-control-allow-methods'), /POST/, p)
+        const ko = await fetch(BASE + p, {method: 'OPTIONS', headers: {
+            origin: 'https://evil.example', 'access-control-request-method': 'POST'}})
+        assert.equal(ko.status, 500, p)
+    }
+})
+
+test('a top-level path with a dot (a file name) does not create a room', async () => {
+    const id = ids()
+    const r = await fetch(`${BASE}/${id}.png`)
+    assert.equal(r.status, 404)
+    await fetch(`${BASE}/${id}`)                                   // a plain name does (control)
+    const all = await (await fetch(BASE + '/api/room/all')).json()
+    assert.ok(all.includes(id))
+    assert.ok(!all.includes(`${id}.png`))
+})
+
 test('socket: join, loadRoom, presence, mouse broadcast, saveRoom versioning, out-of-sync error', async () => {
     const id = ids()
     await fetch(`${BASE}/${id}`)
