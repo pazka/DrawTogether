@@ -8,7 +8,6 @@ const {test, before, after} = require('node:test')
 const assert = require('node:assert/strict')
 const {spawn} = require('node:child_process')
 const fs = require('node:fs')
-const os = require('node:os')
 const path = require('node:path')
 const {PollClient} = require('./sio-poll')
 
@@ -22,8 +21,10 @@ let server, work, log = ''
 const ids = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
 before(async () => {
-    // node-persist (.node-persist/) and multer temp files ("uploads/") are relative to the cwd.
-    work = fs.mkdtempSync(path.join(os.tmpdir(), 'drawtogether-'))
+    // node-persist (.node-persist/) and multer temp files ("uploads/") are relative to the cwd. Keep the cwd
+    // on the same filesystem as front/build/uploads, as in the image (cwd /app): multer renames its temp
+    // file there, and a cross-device rename fails with EXDEV (the known compose bug, see TESTING.md).
+    work = fs.mkdtempSync(path.join(ROOT, '.test-work-'))
     server = spawn(process.execPath, [path.join(ROOT, 'index.js'), 'dev'], {cwd: work})
     server.stdout.on('data', d => { log += d })
     server.stderr.on('data', d => { log += d })
