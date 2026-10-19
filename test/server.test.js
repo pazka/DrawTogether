@@ -1,7 +1,7 @@
 // Upgrade safety net (see TESTING.md): black-box characterization tests of the server that ships today
 // (the committed index.js, started like `npm start` minus tsc). They pin what it does NOW, quirks included,
 // so a Node, Express, multer or Socket.IO bump that changes behaviour fails here.
-// Node built-ins only:  node --test test/
+// Node built-ins only:  node --test test/server.test.js
 'use strict'
 
 const {test, before, after} = require('node:test')

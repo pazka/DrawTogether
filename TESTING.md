@@ -15,7 +15,7 @@ Dockerfile** (owner PR #5 adds a front build stage).
 # server tests: black-box, spawns `node index.js dev` on :9001; Node built-ins only
 docker run --rm -v "$PWD":/src:ro node:20-alpine sh -c \
   'mkdir /a && cd /src && tar --exclude=./node_modules -cf - . | tar -xf - -C /a && cd /a \
-   && npm ci && node --test --test-reporter=spec test/'
+   && npm ci && node --test --test-reporter=spec test/server.test.js'
 
 # container smoke
 docker build -t drawtogether:smoke .
