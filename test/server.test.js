@@ -106,9 +106,14 @@ test('image upload: stored under front/build/uploads/<room>/, linked in the laye
 test('upload with a non-image extension is refused and nothing is stored', async () => {
     const id = ids()
     await fetch(`${BASE}/${id}`)
-    const r = await upload(id, 1, 'notes.txt', Buffer.from('hello'), 'text/plain')
-    assert.equal(r.status, 403)
-    assert.ok(!fs.existsSync(path.join(UPLOADS, id, 'notes.txt')))
+    // Repeated: the refused file used to race into the uploads folder (stored and served from the site).
+    for (let i = 0; i < 20; i++) {
+        const r = await upload(id, 1, `page${i}.html`, Buffer.from('<script>alert(1)</script>'), 'text/html')
+        assert.equal(r.status, 403)
+    }
+    await new Promise(r => setTimeout(r, 200))
+    assert.deepEqual(fs.existsSync(path.join(UPLOADS, id)) ? fs.readdirSync(path.join(UPLOADS, id)) : [], [])
+    assert.equal((await fetch(`${BASE}/uploads/${id}/page0.html`)).status, 404)
 })
 
 test('known gap: upload checks the extension only, not the content or the size', async () => {

@@ -32,6 +32,8 @@ export function writeImage(originalName: string, roomId: string, layerId: string
 
                 return reject(`Only ${validFormats.join(', ')} files are allowed!`);
             })
+            // Without this return the rename below raced the unlink and could store the refused file.
+            return
         }
 
         //move tmp file to public folder

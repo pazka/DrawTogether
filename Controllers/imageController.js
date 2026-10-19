@@ -26,6 +26,7 @@ function writeImage(originalName, roomId, layerId, tempPath) {
                     return reject(err);
                 return reject("Only " + exports.validFormats.join(', ') + " files are allowed!");
             });
+            return;
         }
         var targetPath = path.join(targetFolder, "" + originalName);
         fs.rename(tempPath, targetPath, function (err) {
