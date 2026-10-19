@@ -143,6 +143,13 @@ test('CORS preflight: OPTIONS on any path answers 204 for an allowed origin, 500
     }
 })
 
+test('requests are logged in Apache combined format (morgan)', async () => {
+    const marker = ids()
+    await fetch(`${BASE}/api/room/all?m=${marker}`, {headers: {'user-agent': `ua-${marker}`}})
+    await new Promise(r => setTimeout(r, 100))
+    assert.match(log, new RegExp(`"GET /api/room/all\\?m=${marker} HTTP/1\\.1" 200 \\d+ "-" "ua-${marker}"`))
+})
+
 test('a top-level path with a dot (a file name) does not create a room', async () => {
     const id = ids()
     const r = await fetch(`${BASE}/${id}.png`)
