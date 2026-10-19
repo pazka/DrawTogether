@@ -29,9 +29,7 @@ jobs:
     name: container smoke (${{ matrix.mode }})
     needs: test
     runs-on: ubuntu-latest
-    # deployed = like docker-compose.yml today (gate). hardened = non-root + read-only rootfs: fails on
-    # master until the upload temp-dir fix (owner PR #5) is merged; then make it blocking (TESTING.md).
-    continue-on-error: ${{ matrix.mode == 'hardened' }}
+    # deployed = like docker-compose.yml; hardened = non-root + read-only rootfs. Both are gates.
     strategy:
       fail-fast: false
       matrix:

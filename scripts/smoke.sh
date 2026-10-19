@@ -5,8 +5,8 @@
 #
 # deployed (default): exactly like docker-compose.yml today (no extra flags; uploads + persist volumes).
 # hardened: non-root (node, uid 1000), read-only rootfs, cap_drop ALL, no-new-privileges, same volumes.
-#           On master the upload fails here (multer temp dir on the rootfs: EROFS/EACCES, and a rename
-#           across devices: EXDEV). Owner PR #5 is meant to fix exactly that; this mode validates it.
+# Both modes require a working upload: multer's temp dir lives on the uploads volume (PR #5), so the
+# rename stays on one filesystem (before: EXDEV with the compose volume, EROFS when read-only).
 set -euo pipefail
 
 IMAGE="${1:-drawtogether:smoke}"
@@ -61,12 +61,9 @@ code 200 "$BASE/api/room/all"
 grep -q "$ROOM" body.out || fail "room not listed"
 
 step "front"
-if dk exec "$NAME" test -f /app/front/build/index.html; then
-  code 200 -L "$BASE/$ROOM"   # serve-static answers 301 /room -> /room/
-  grep -qi '<div id="root">' body.out || fail "front index not served"
-else
-  echo "   (image has no front/build: master's Dockerfile does not build the front; PR #5 does)"
-fi
+dk exec "$NAME" test -f /app/front/build/index.html || fail "image has no front build"
+code 200 -L "$BASE/$ROOM"   # serve-static answers 301 /room -> /room/
+grep -qi '<div id="root">' body.out || fail "front index not served"
 
 step "Socket.IO handshake"
 code 200 "$BASE/socket.io/?EIO=4&transport=polling"
@@ -74,17 +71,6 @@ grep -q '"sid"' body.out || fail "no engine.io sid"
 
 printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' \
   | base64 -d >pixel.png
-if [ "$MODE" = deployed ] && [ "${SMOKE_UPLOAD_FIXED:-0}" != 1 ]; then
-  # Pinned known bug (TESTING.md): multer writes to /app/uploads (rootfs) and rename() to the uploads
-  # volume fails with EXDEV, so uploads 403 in the compose setup. PR #5 targets this: once it is merged,
-  # set SMOKE_UPLOAD_FIXED=1 (or drop this branch) so the success path below is required.
-  step "image upload to the uploads volume: known EXDEV failure (pinned)"
-  code 403 -F "layerImg=@pixel.png;type=image/png" "$BASE/api/room/$ROOM/1/upload"
-  grep -q EXDEV body.out || fail "upload failed, but not with the known EXDEV error: $(cat body.out)"
-  SMOKE_OK=1
-  echo "SMOKE OK ($IMAGE, $MODE; upload EXDEV pinned)"
-  exit 0
-fi
 step "image upload to the uploads volume, served back"
 code 200 -F "layerImg=@pixel.png;type=image/png" "$BASE/api/room/$ROOM/1/upload"
 code 200 "$BASE/uploads/$ROOM/pixel.png"
