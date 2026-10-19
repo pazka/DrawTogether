@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: npm ci --no-audit --no-fund
-      - run: node --test --test-reporter=spec test/server.test.js test/imageController.test.js
+      - run: node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js
 
   smoke:
     name: container smoke (${{ matrix.mode }})
