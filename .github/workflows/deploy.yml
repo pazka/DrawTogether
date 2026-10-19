@@ -1,6 +1,6 @@
 name: build-scan-push
 # Phase-2 CI (hosh.it): build -> Trivy gate (CRITICAL) -> push ghcr :ci + :sha.
-# Deliberately does NOT touch :latest — the box runs known-good mirrors. Promote a
+# Deliberately does NOT touch :latest - the box runs known-good mirrors. Promote a
 # validated build with: docker buildx imagetools create -t ghcr.io/pazka/drawtogether:latest ghcr.io/pazka/drawtogether:<sha>
 on:
   push:

@@ -3,6 +3,17 @@ updates:
   - package-ecosystem: docker
     directory: "/"
     schedule: { interval: monthly }
+  # One PR for all action bumps: separate PRs editing the same workflows conflict once one is merged.
   - package-ecosystem: github-actions
     directory: "/"
     schedule: { interval: monthly }
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: "/"
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
