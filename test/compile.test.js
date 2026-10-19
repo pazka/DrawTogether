@@ -1,7 +1,8 @@
 // The image runs the committed *.js, compiled from the *.ts. This pins that the toolchain works
 // (`tsc -p tsconfig.json` compiles cleanly with the locked typescript + @types/node) and that the committed
 // *.js is exactly what the *.ts compiles to today (CRLF included), so the two cannot drift apart.
-// Node built-ins only (tsc is the locked devDependency):  node --test test/compile.test.js
+// Also pins the fs-extra call build.js relies on. Node built-ins plus the locked devDependencies (typescript,
+// fs-extra):  node --test test/compile.test.js
 'use strict'
 
 const {test} = require('node:test')
@@ -39,5 +40,23 @@ test('tsc compiles the sources cleanly and the committed *.js is their exact out
         }
     } finally {
         fs.rmSync(out, {recursive: true, force: true})
+    }
+})
+
+test('build.js copy step: fs-extra copySync copies a tree and overwrites existing files', () => {
+    const fse = require('fs-extra')
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-fse-'))
+    try {
+        const src = path.join(tmp, 'Services'), dst = path.join(tmp, 'build', 'Services')
+        fs.mkdirSync(path.join(src, 'sockets'), {recursive: true})
+        fs.writeFileSync(path.join(src, 'api.js'), 'new')
+        fs.writeFileSync(path.join(src, 'sockets', 'index.js'), 'sock')
+        fs.mkdirSync(dst, {recursive: true})
+        fs.writeFileSync(path.join(dst, 'api.js'), 'old')
+        fse.copySync(src, dst, {overwrite: true})                  // as in build.js moveFiles()
+        assert.equal(fs.readFileSync(path.join(dst, 'api.js'), 'utf8'), 'new')
+        assert.equal(fs.readFileSync(path.join(dst, 'sockets', 'index.js'), 'utf8'), 'sock')
+    } finally {
+        fs.rmSync(tmp, {recursive: true, force: true})
     }
 })
