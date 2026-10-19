@@ -32,7 +32,7 @@
     "@types/morgan": "^1.9.3",
     "@types/node": "^26.6.5",
     "@types/node-persist": "^3.1.2",
-    "fs-extra": "^10.0.0",
+    "fs-extra": "^11.4.1",
     "typescript": "^7.0.2"
   }
 }
