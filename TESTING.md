@@ -6,29 +6,30 @@ the server does today so a Dependabot PR is judged on its CI run.
 ## What ships
 
 The image runs the **committed `*.js`** (`npm run start-prod` → `node index.js prod`; no `tsc` in the image).
-The `*.ts` files are the sources those were compiled from. `front/` (CRA 4) is **not built by master's
-Dockerfile** (owner PR #5 adds a front build stage).
+The `*.ts` files are the sources those were compiled from. `front/` (CRA 4) is built in a Dockerfile stage
+and served from `/app/front/build`.
+
 
 ## Run it
 
 ```bash
 # server tests: black-box, spawns `node index.js dev` on :9001; Node built-ins only
-docker run --rm -v "$PWD":/src:ro node:20-alpine sh -c \
+docker run --rm -v "$PWD":/src:ro node:26-alpine sh -c \
   'mkdir /a && cd /src && tar --exclude=./node_modules -cf - . | tar -xf - -C /a && cd /a \
    && npm ci && node --test --test-reporter=spec test/server.test.js'
 
 # container smoke
 docker build -t drawtogether:smoke .
-bash scripts/smoke.sh drawtogether:smoke deployed   # like docker-compose.yml today (gate)
-bash scripts/smoke.sh drawtogether:smoke hardened   # non-root, read-only rootfs (PR #5 target)
+bash scripts/smoke.sh drawtogether:smoke deployed   # like docker-compose.yml
+bash scripts/smoke.sh drawtogether:smoke hardened   # non-root, read-only rootfs
 ```
 
 (Windows Git Bash: prefix `docker run` with `MSYS_NO_PATHCONV=1`, mount `"$(cygpath -w "$PWD")"`.)
 
 ## CI (`.github/workflows/ci.yml`)
 
-PRs, `master`, `agent/**`: `server tests (node 20|26)`; `container smoke (deployed)` (gate);
-`container smoke (hardened)` (non-blocking until PR #5 is merged).
+PRs, `master`, `agent/**`, all gates: `server tests (node 20|26)`, `container smoke (deployed)`,
+`container smoke (hardened)`.
 
 ## What is covered
 
@@ -38,28 +39,20 @@ socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` cr
 the layer, served back; non-image extension refused; CORS allow/deny; two Socket.IO clients: join,
 `loadRoom`, presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
 
-`scripts/smoke.sh`: the built image — new room, REST, front (when the image has one), engine.io
-handshake, image upload to the uploads volume and served back, no crash in the logs.
+`scripts/smoke.sh`: the built image — new room, REST, front served, engine.io handshake, image upload to the
+uploads volume and served back, no crash in the logs; in both modes.
 
-## Owner PR #5 — what it is expected to fix (validated locally 2026-10-19, PR head ccbcb12, not merged)
+## Changes and upgrades (2026-10-19)
 
-| check | master | PR #5 |
-|---|---|---|
-| upload with the compose uploads volume (`deployed`) | **403 `EXDEV`** — multer writes to `/app/uploads` on the rootfs, then `rename()` to the volume fails (pinned in the smoke) | upload works |
-| non-root + read-only rootfs (`hardened`) | **does not boot** (`EROFS mkdir /app/uploads`) | passes |
-| front served at `/<room>` | no front in the image | served |
-
-After merging PR #5: in `scripts/smoke.sh` drop the pinned-EXDEV branch (or run with
-`SMOKE_UPLOAD_FIXED=1`) and remove `continue-on-error` from the hardened smoke. Its CI run will fail on the
-pinned 403 until then — that is the expected flip signal. **Before deploying PR #5**: it builds
-`front/build/uploads` and `.node-persist` owned by uid 1000; if the box runs it as `node`, the bind-mounted
-host dirs `./uploads` and `./persist` must be writable by uid 1000.
-
-## Upgrades checked (2026-10-19)
-
-- **Node 20 → 26** (Dependabot #4): server tests 9/9 on 26.12, deployed smoke OK on `node:26-alpine` → **go**
-  (same upload EXDEV as on 20; unrelated to the bump). PR #5's front stage uses `node:16-alpine` (EOL); a
-  newer Node needs `--openssl-legacy-provider` for react-scripts 4.
+- **Owner PR #5 merged** (validated first): multer's temp dir is on the uploads mount, so uploads work with
+  the compose volume (they failed with `EXDEV` before) and the image runs non-root with a read-only rootfs;
+  the front is built in the image (master's image had no front). The smoke's pinned EXDEV expectation was
+  flipped and the hardened mode became a gate.
+- **Node 26** runtime (supersedes Dependabot #4), `npm ci` from the lockfile, no global npm upgrade.
+  The front build stage stays on `node:16-alpine`: react-scripts 4 (webpack 4) needs it or
+  `--openssl-legacy-provider`; it is build-only and not shipped.
+- If the box ever runs the image as `node` (uid 1000), the bind-mounted `./uploads` and `./persist` must be
+  writable by uid 1000 (the image itself runs as root by default, like before).
 
 ## Known gaps (pinned, not changed)
 
