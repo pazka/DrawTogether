@@ -193,3 +193,22 @@ test('socket: join, loadRoom, presence, mouse broadcast, saveRoom versioning, ou
         await b.close()
     }
 })
+
+test('malformed multipart uploads get an error answer and do not take the server down', async () => {
+    const id = ids()
+    await fetch(`${BASE}/${id}`)
+    const bodies = [
+        '--x\r\nContent-Disposition: form-data; name="layerImg"; filename="a.png"\r\n\r\ntruncated',
+        '--x\r\n' + 'A'.repeat(100) + ':' + '\r\n\r\n--x--',
+        '--x\r\nContent-Disposition: form-data; name="layerImg"; filename="a.png"\r\n' + 'X-Junk: ' + 'B'.repeat(70000) + '\r\n\r\nx\r\n--x--',
+    ]
+    for (const body of bodies) {
+        const r = await fetch(`${BASE}/api/room/${id}/1/upload`, {
+            method: 'POST', headers: {'content-type': 'multipart/form-data; boundary=x'}, body,
+        })
+        assert.ok(r.status >= 400, `status ${r.status}`)
+        await r.arrayBuffer()
+    }
+    assert.equal(server.exitCode, null, 'server process still running')
+    assert.equal((await fetch(`${BASE}/api/room/${id}`)).status, 200)
+})
