@@ -16,7 +16,9 @@ exports.saveRoom = saveRoom;
 exports.removeRoom = removeRoom;
 const persist = require("node-persist");
 const events_1 = require("./events");
+const persistMigration_1 = require("./persistMigration");
 let ready = false;
+let initializing = null;
 let isDequeuingJobs = false;
 let jobQueue = [];
 function recursivelyExecJobStack(nbFnToExec) {
@@ -32,11 +34,21 @@ const operationWorker = setInterval(() => {
         recursivelyExecJobStack(jobQueue.length);
     }
 }, 1);
+function init() {
+    if (!initializing) {
+        initializing = (() => __awaiter(this, void 0, void 0, function* () {
+            const options = yield persist.init({});
+            (0, persistMigration_1.migrateMd5ToSha256)(options.dir);
+            ready = true;
+        }))();
+        initializing.catch(() => { initializing = null; });
+    }
+    return initializing;
+}
 function safeOperation(cb) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!ready) {
-            yield persist.init({});
-            ready = true;
+            yield init();
         }
         jobQueue.push(cb);
     });

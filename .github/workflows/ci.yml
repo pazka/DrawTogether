@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: npm ci --no-audit --no-fund
-      - run: node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js
+      - run: node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js test/persistMigration.test.js
 
   smoke:
     name: container smoke (${{ matrix.mode }})
@@ -44,3 +44,33 @@ jobs:
           push: false
           tags: drawtogether:smoke
       - run: bash scripts/smoke.sh drawtogether:smoke ${{ matrix.mode }}
+
+  upgrade:
+    # node-persist 3 -> 4 data migration (MIGRATIONS.md): rooms written by the last node-persist 3 image
+    # (master ae2d4d4) on the same volumes must come back identical with this image, and after a rollback.
+    name: upgrade smoke (node-persist 3 -> 4)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: new
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ae2d4d40e34c859886063e72a046fd4245a67ea9
+          path: old
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: old
+          load: true
+          push: false
+          tags: drawtogether:np3
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: new
+          load: true
+          push: false
+          tags: drawtogether:np4
+      - run: bash new/scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:np4 deployed
+      - run: bash new/scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:np4 hardened

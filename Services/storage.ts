@@ -2,8 +2,10 @@
 
 import persist = require('node-persist')
 import {On, send} from "./events";
+import {migrateMd5ToSha256} from "./persistMigration";
 
 let ready = false
+let initializing: Promise<void> = null
 
 let isDequeuingJobs = false
 let jobQueue: Function[] = []
@@ -24,10 +26,23 @@ const operationWorker = setInterval(() => {
     }
 }, 1)
 
+function init(): Promise<void> {
+    if (!initializing) {
+        initializing = (async () => {
+            const options = await persist.init( {})
+            // node-persist 4 names files sha256(key) instead of md5(key): copy the 3.x files before
+            // the first read, or every existing room would vanish (MIGRATIONS.md)
+            migrateMd5ToSha256(options.dir)
+            ready = true
+        })()
+        initializing.catch(() => { initializing = null })
+    }
+    return initializing
+}
+
 async function safeOperation(cb: Function) {
     if (!ready) {
-        await persist.init( {})
-        ready = true
+        await init()
     }
     
     jobQueue.push(cb)
