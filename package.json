@@ -23,7 +23,7 @@
     "http": "0.0.1-security",
     "js-queue": "^2.0.2",
     "morgan": "^1.12.1",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "node-persist": "^4.0.4",
     "socket.io": "^4.8.4"
   },
