@@ -1,6 +1,6 @@
-﻿# ---- Stage 1: build the React front (build-only; only front/build reaches the runtime image) ----
+# ---- Stage 1: build the React front (build-only; only front/build reaches the runtime image) ----
 # react-scripts 4 (webpack 4) builds cleanly on node 16 without --openssl-legacy-provider.
-FROM node:16-alpine AS front
+FROM node:25-alpine AS front
 
 WORKDIR /front
 
