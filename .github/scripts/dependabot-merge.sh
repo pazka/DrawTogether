@@ -8,7 +8,7 @@
 #   dependabot-merge.sh self-test                 checks "decide" against known messages
 #
 # Policy: merge only when every update in Dependabot's own metadata block is semver-patch or
-# semver-minor, the PR is Dependabot's alone (one GitHub-verified commit by dependabot[bot], from
+# semver-minor (a minor bump of a 0.x version counts as a major), the PR is Dependabot's alone (one GitHub-verified commit by dependabot[bot], from
 # this repo), and CI passed on that exact commit. Anything else (major, unknown, someone else
 # pushed) is labelled "needs-review" and left open. After a merge the CI is re-run on the default
 # branch, because a merge made with GITHUB_TOKEN does not trigger push workflows.
@@ -22,16 +22,26 @@ log() { printf '%s\n' "$*" >&2; }
 # change the answer. No block, no update-type, or any type other than minor/patch → review.
 decide() {
   awk '
-    /^updated-dependencies:[[:space:]]*$/ { inblock = 1; next }
-    inblock && /^\.\.\.[[:space:]]*$/     { inblock = 0; next }
-    inblock && /^[[:space:]]*update-type:/ {
-      t = $0
-      sub(/^[[:space:]]*update-type:[[:space:]]*/, "", t)
-      gsub(/["\047\r[:space:]]/, "", t)
+    function judge() {
+      if (!item) return
       seen++
-      if (t != "version-update:semver-patch" && t != "version-update:semver-minor") bad++
+      ok = (type == "version-update:semver-patch" || type == "version-update:semver-minor")
+      # 0.y.z: a minor bump is a breaking release (SemVer §4), so it waits like a major.
+      if (type == "version-update:semver-minor" && ver ~ /^v?0\./) ok = 0
+      if (!ok) bad++
+      item = 0; type = ""; ver = ""
     }
-    END { print (seen > 0 && bad == 0) ? "merge" : "review" }
+    function val(line) {
+      sub(/^[[:space:]-]*[a-z-]+:[[:space:]]*/, "", line)
+      gsub(/["\047\r[:space:]]/, "", line)
+      return line
+    }
+    /^updated-dependencies:[[:space:]]*$/ { inblock = 1; next }
+    inblock && /^\.\.\.[[:space:]]*$/     { judge(); inblock = 0; next }
+    inblock && /^-[[:space:]]+dependency-name:/ { judge(); item = 1; next }
+    inblock && /^[[:space:]]*dependency-version:/ { ver = val($0); next }
+    inblock && /^[[:space:]]*update-type:/ { type = val($0); next }
+    END { if (inblock) bad++; print (seen > 0 && bad == 0) ? "merge" : "review" }
   '
 }
 
@@ -120,6 +130,53 @@ updated-dependencies:
 - dependency-name: x
   update-type: version-update:semver-major
 ...
+M
+  check review "0.x minor is breaking" <<'M'
+build(deps): Bump fastapi from 0.143.0 to 0.148.0
+
+---
+updated-dependencies:
+- dependency-name: fastapi
+  dependency-version: 0.148.0
+  dependency-type: direct:production
+  update-type: version-update:semver-minor
+...
+M
+  check merge "0.x patch" <<'M'
+---
+updated-dependencies:
+- dependency-name: fastapi
+  dependency-version: 0.148.1
+  update-type: version-update:semver-patch
+...
+M
+  check review "group with a 0.x minor" <<'M'
+---
+updated-dependencies:
+- dependency-name: fastapi
+  dependency-version: 0.148.0
+  update-type: version-update:semver-minor
+- dependency-name: starlette
+  dependency-version: 1.9.0
+  update-type: version-update:semver-minor
+...
+M
+  check review "item without update-type" <<'M'
+---
+updated-dependencies:
+- dependency-name: a
+  dependency-version: 1.2.4
+  update-type: version-update:semver-patch
+- dependency-name: b
+  dependency-version: 2.0.0
+...
+M
+  check review "block never closed" <<'M'
+---
+updated-dependencies:
+- dependency-name: a
+  dependency-version: 1.2.4
+  update-type: version-update:semver-patch
 M
   check review "empty message" </dev/null
   [ "$fails" -eq 0 ] || { log "$fails self-test(s) failed"; return 1; }
