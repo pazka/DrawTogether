@@ -1,6 +1,8 @@
 ﻿# ---- Stage 1: build the React front (build-only; only front/build reaches the runtime image) ----
-# react-scripts 4 (webpack 4) builds cleanly on node 16 without --openssl-legacy-provider.
-FROM node:16-alpine AS front
+# react-scripts 4 (webpack 4) hashes with md4, which OpenSSL 3 (node >= 17) only offers through the
+# legacy provider. Same node line as the runtime stage (node 16 is EOL); the flag is build-only.
+FROM node:26-alpine AS front
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 WORKDIR /front
 
