@@ -1,0 +1,49 @@
+# Merge Dependabot's minor and patch updates once CI passed on that exact commit (box standard,
+# hosh-migration 11-BOX-STANDARD.md §2). Majors and anything unusual get the "needs-review" label
+# and stay open. The decision logic is .github/scripts/dependabot-merge.sh, read from the default
+# branch (never from the PR), and it tests itself before deciding.
+#
+# Per repo: put the exact `name:` of the workflow that runs the full test suite on pull requests in
+# `workflows:` below and in CI_WORKFLOW. That workflow must also accept `workflow_dispatch`
+# (it is re-run on the default branch after each merge).
+name: dependabot-merge
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: dependabot-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write        # merge
+      pull-requests: write   # merge
+      issues: write          # "needs-review" label
+      actions: write         # re-run CI on the default branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1  # default branch: trusted code only
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Self-test the merge policy
+        run: bash .github/scripts/dependabot-merge.sh self-test
+      - name: Merge if it is a tested minor or patch update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CI_WORKFLOW: ci
+        run: bash .github/scripts/dependabot-merge.sh run
