@@ -1,0 +1,48 @@
+# drawtogether on the hosh.it box (no secrets here). On the box it becomes /srv/drawtogether/docker-compose.yml,
+# validated and pinned by `hosh-deploy register` (any later change needs a re-register).
+# Box standard (hosh-migration 11-BOX-STANDARD.md): published on a LOOPBACK port only; the edge Traefik
+# (host network, file provider) routes draw.hosh.it to it (route rendered by hosh-deploy from
+# deploy/traefik-route.yml.tmpl). WebSockets (Socket.IO) pass through Traefik without extra config.
+# hosh-deploy refuses: root user, writable rootfs, missing cap_drop ALL / no-new-privileges /
+# healthcheck, privileged, host network/pid/ipc, devices, bind mounts, non-loopback ports.
+name: drawtogether            # fixed compose project name (whatever the checkout dir)
+services:
+  drawtogether:
+    image: ${APP_IMAGE:-ghcr.io/pazka/drawtogether:latest}
+    container_name: drawtogether
+    restart: unless-stopped
+    env_file: ./drawtogether.env          # chmod 600
+    # The container layout, fixed here (not in the env file): it must match the port mapping and the volume.
+    # The image defaults (port 80, /app/front/build/uploads, /app/.node-persist) are the legacy box layout.
+    environment:
+      PORT: "8000"
+      UPLOADS_DIR: /data/uploads          # uploaded images, served under https://draw.hosh.it/uploads/
+      PERSIST_DIR: /data/persist          # node-persist room store (one file per key)
+    volumes:
+      - drawtogether-data:/data           # ALL state lives here (backed up monthly with /var/lib/docker/volumes)
+    # --- hardening (box standard) ---
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    user: "10001:10001"
+    pids_limit: 128
+    mem_limit: 512m
+    healthcheck:
+      # GET /healthz on :8000 (uploads + store writable, room list readable), via node (no curl in the image)
+      test: ["CMD", "node", "/app/scripts/healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    ports:
+      - "${APP_BIND:-127.0.0.1:9135}:8000"   # loopback only, never 0.0.0.0
+
+volumes:
+  drawtogether-data:
+    name: drawtogether-data       # exact docker volume name

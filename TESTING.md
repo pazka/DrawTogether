@@ -17,7 +17,7 @@ and served from `/app/front/build`.
 docker run --rm -v "$PWD":/src:ro node:26-alpine sh -c \
   'mkdir /a && cd /src && tar --exclude=./node_modules -cf - . | tar -xf - -C /a && cd /a \
    && npm ci && node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js \
-   test/persistMigration.test.js'
+   test/persistMigration.test.js test/config.test.js'
 
 # recompile after editing a .ts (CRLF output, set in tsconfig): compile in a container, copy the JS out
 docker run --rm -v "$PWD":/src:ro -v "$PWD/.tsc-out":/out node:26-alpine sh -c \
@@ -31,6 +31,8 @@ docker build -t drawtogether:smoke .
 bash scripts/smoke.sh drawtogether:smoke deployed   # like docker-compose.yml
 bash scripts/smoke.sh drawtogether:smoke hardened   # non-root, read-only rootfs
 bash scripts/smoke.sh drawtogether:smoke legacy     # exactly the box's legacy compose (uid 1000, bind mounts)
+bash scripts/smoke.sh drawtogether:smoke template   # docker-compose.example.yml (hosh-deploy: 10001, /data, :8000)
+bash scripts/cutover-smoke.sh drawtogether:smoke    # legacy -> hosh-deploy cutover rehearsal (DEPLOY.md §5)
 
 # node-persist 3 -> 4 upgrade smoke: build the last node-persist 3 master (ae2d4d4) as the old image
 git worktree add /tmp/dt-np3 ae2d4d4 && docker build -t drawtogether:np3 /tmp/dt-np3
@@ -43,11 +45,12 @@ bash scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:smoke hardened
 ## CI (`.github/workflows/ci.yml`)
 
 PRs, `master`, `agent/**`, all gates: `server tests (node 26)`, `container smoke (deployed)`,
-`container smoke (hardened)`, `container smoke (legacy)`, `upgrade smoke (node-persist 3 -> 4)`.
+`container smoke (hardened)`, `container smoke (legacy)`, `container smoke (template)`,
+`cutover smoke (legacy -> hosh-deploy)`, `upgrade smoke (node-persist 3 -> 4)`.
 
 Node guardrail (`scripts/check-node-version.sh <image>`, pazka/hosh-management#5): the built image's Node must
 be an LTS line (22/24/26) at or above its patched minimum (CVE-2026-111497). Runs in `container smoke` after
-the build, and in `release.yml` / `deploy.yml` before any push; `container smoke (deployed)` also checks it
+the build, and in `release.yml` / `build-scan-push.yml` before any push; `container smoke (deployed)` also checks it
 refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node:26.13.0-alpine@sha256:…`
 (Dependabot `docker` bumps it).
 
@@ -71,7 +74,23 @@ no-new-privileges, cap_drop ALL, host bind mounts `./front/build/uploads` and `.
 port 80) and also checks the files land in those host dirs: every release must keep working with it until the
 hosh-deploy cutover.
 
-`scripts/capability-smoke.js` (Node built-ins + `test/sio-poll.js`, runs inside the container): room list, the
+Mode `template` is `docker-compose.example.yml` as `docker run` flags (uid 10001, read-only rootfs, tmpfs
+/tmp, pids 128, mem 512m, `PORT=8000`, `UPLOADS_DIR=/data/uploads`, `PERSIST_DIR=/data/persist`, one fresh named
+volume at `/data` with no chown): `/healthz`, the image `HEALTHCHECK` turns healthy, all state is in `/data`
+and nothing is written to the image paths. Every mode also checks `/healthz` creates no room.
+
+`scripts/cutover-smoke.sh <image>`: rooms made under the legacy compose (plus an md5-named node-persist 3
+original, like the box keeps), the DEPLOY.md §5 data move verbatim, `docker-compose.example.yml` + `.env.example`
+through the box's register hardening check (`.github/scripts/register-check.py`, a copy of hosh-deploy's),
+`docker compose up`, healthy, `/healthz` on BIND, `POST_DEPLOY` from `deploy/hosh-deploy.conf` as argv, the
+same rooms/list/image byte for byte, a restart, then the rollback to the legacy compose on its untouched dirs.
+
+`test/config.test.js` (3 tests): `PORT`, `UPLOADS_DIR`, `PERSIST_DIR` from the env (`/healthz` 200 with
+uploads/store writable and a room count, `HEAD` too, no room "healthz", not logged; images land in UPLOADS_DIR
+and are served under `/uploads/`, room files in PERSIST_DIR, nothing in the cwd; a bad `PORT` stops the start).
+
+`scripts/capability-smoke.js` (Node built-ins + `test/sio-poll.js`, runs inside the container; hosh-deploy
+`POST_DEPLOY`): `/healthz`, room list, the
 front for a room, an import read back, an image upload stored and served back, a Socket.IO client joining the
 room and receiving it. Everything happens in one fixed room `hosh-deploy-smoke` (overwritten on each run,
 expires like any room), so it is safe to run against production after each deploy.
@@ -146,4 +165,4 @@ a refused extension is deleted and never moved or linked; an accepted image is m
 - `GET /api/room/all` lists every room id, and a room URL is its only access key.
 - `Services/sockets/index.ts` subscribes `EDIT_ROOM`/`ERROR` once per connection and never unsubscribes:
   listeners leak and each edit is emitted once per connection ever made.
-- Dockerfile uses `npm install` (not `npm ci`); image runs as root; no HEALTHCHECK.
+- Image runs as root by default (the composes set the user); HEALTHCHECK = `GET /healthz` since v1.2.0.

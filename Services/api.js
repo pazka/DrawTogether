@@ -14,9 +14,10 @@ const multer = require("multer");
 const express = require("express");
 const imageController_1 = require("../Controllers/imageController");
 const events_1 = require("./events");
+const paths_1 = require("./paths");
 const router = express.Router();
 const roomController = require('../Controllers/roomController');
-const uploadTmpDir = path.join(__dirname, "../front/build/uploads/.tmp");
+const uploadTmpDir = path.join(paths_1.uploadsDir, ".tmp");
 const upload = multer({
     dest: uploadTmpDir
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Container smoke test (upgrade safety net, see TESTING.md).
 #
-#   docker build -t drawtogether:smoke . && bash scripts/smoke.sh drawtogether:smoke [deployed|hardened|legacy]
+#   docker build -t drawtogether:smoke . && bash scripts/smoke.sh drawtogether:smoke [deployed|hardened|legacy|template]
 #
 # deployed (default): exactly like docker-compose.yml today (no extra flags; uploads + persist volumes).
 # hardened: non-root (node, uid 1000), read-only rootfs, cap_drop ALL, no-new-privileges, same volumes.
@@ -9,6 +9,9 @@
 #   the hosh-deploy cutover): uid 1000, sysctl ip_unprivileged_port_start=0, no-new-privileges, cap_drop ALL,
 #   restart unless-stopped, host BIND MOUNTS ./front/build/uploads and ./.node-persist owned by 1000,
 #   127.0.0.1:<port>:80. The data must land in those host dirs, at today's paths.
+# template: exactly like docker-compose.example.yml (hosh-deploy): uid 10001, read-only rootfs, tmpfs /tmp,
+#   cap_drop ALL, no-new-privileges, pids 128, mem 512m, ONE fresh named volume at /data
+#   (UPLOADS_DIR=/data/uploads, PERSIST_DIR=/data/persist), PORT=8000, image HEALTHCHECK must turn healthy.
 # Every mode: the in-container capability smoke (scripts/capability-smoke.js: REST, import round-trip,
 # upload, Socket.IO join) and a restart: rooms, uploads and the room list survive `docker restart`.
 # Both modes require a working upload: multer's temp dir lives on the uploads volume (PR #5), so the
@@ -28,7 +31,7 @@ cleanup() {
   cd /
   if [ "${SMOKE_OK:-0}" != 1 ]; then echo "---- container log ----"; dk logs "$NAME" 2>&1 | tail -n 40 || true; fi
   dk rm -f "$NAME" >/dev/null 2>&1 || true
-  dk volume rm -f "$NAME-uploads" "$NAME-persist" >/dev/null 2>&1 || true
+  dk volume rm -f "$NAME-uploads" "$NAME-persist" "$NAME-data" >/dev/null 2>&1 || true
   # legacy bind dirs hold files owned by uid 1000: remove them from a container (the runner may not be root)
   if [ -d "$TMP/box" ]; then dk run --rm -v "$TMP/box:/b" --entrypoint sh "$IMAGE" -c 'rm -rf /b/* /b/.[!.]*' >/dev/null 2>&1 || true; fi
   rm -rf "$TMP" 2>/dev/null || true
@@ -65,6 +68,15 @@ case "$MODE" in
       --security-opt no-new-privileges:true --cap-drop ALL --restart unless-stopped)
     vols=(-v "$TMP/box/front/build/uploads:/app/front/build/uploads" -v "$TMP/box/.node-persist:/app/.node-persist")
     ;;
+  template)
+    # docker-compose.example.yml as docker run flags (scripts/cutover-smoke.sh runs the compose file itself).
+    # No chown: a fresh volume must be writable by 10001 out of the box (the image's /data is 10001-owned).
+    CPORT=8000
+    flags+=(--user 10001:10001 --read-only --tmpfs /tmp:size=16m,mode=1777 --cap-drop ALL \
+      --security-opt no-new-privileges:true --pids-limit 128 --memory 512m \
+      -e PORT=8000 -e UPLOADS_DIR=/data/uploads -e PERSIST_DIR=/data/persist)
+    vols=(-v "$NAME-data:/data")
+    ;;
   *) fail "unknown mode $MODE" ;;
 esac
 
@@ -81,6 +93,19 @@ step "start $IMAGE ($MODE)"
 dk run -d --name "$NAME" "${flags[@]}" "${vols[@]}" -p "127.0.0.1:${PORT}:${CPORT}" "$IMAGE" >/dev/null
 wait_up
 dk logs "$NAME" 2>&1 | grep -q "Listening on ${CPORT}" || fail "no 'Listening on ${CPORT}' line"
+
+step "healthz + image HEALTHCHECK"
+code 200 "$BASE/healthz"
+grep -q '"status":"ok"' body.out && grep -q '"uploads":"writable"' body.out && grep -q '"store":"writable"' body.out \
+  || fail "healthz: $(cat body.out)"
+code 200 -I "$BASE/healthz"   # HEAD like GET
+for _ in $(seq 1 40); do
+  h="$(dk inspect --format '{{.State.Health.Status}}' "$NAME")"
+  [ "$h" = healthy ] && break; [ "$h" = unhealthy ] && fail "container unhealthy"; sleep 1
+done
+[ "$h" = healthy ] || fail "container not healthy ($h)"
+code 200 "$BASE/api/room/all"
+grep -q '"healthz"' body.out && fail "/healthz created a room"
 
 step "new room + REST"
 ROOM="$(curl -sS -o /dev/null -w '%{redirect_url}' "$BASE/" | sed 's#.*/##')"
@@ -115,6 +140,14 @@ if [ "$MODE" = legacy ]; then
   step "legacy: data landed in the host bind mounts at today's paths"
   cmp -s box/front/build/uploads/"$ROOM"/pixel.png pixel.png || fail "upload not in ./front/build/uploads/<room>/"
   ls box/.node-persist/storage | grep -Eq '^[0-9a-f]{64}$' || fail "no node-persist file in ./.node-persist/storage/"
+fi
+if [ "$MODE" = template ]; then
+  step "template: all state in the /data volume, nothing written elsewhere"
+  dk exec "$NAME" sh -c "cmp /data/uploads/$ROOM/pixel.png /data/uploads/hosh-deploy-smoke/smoke.png >/dev/null 2>&1; test -f /data/uploads/$ROOM/pixel.png" \
+    || fail "upload not in /data/uploads/<room>/"
+  dk exec "$NAME" sh -c 'ls /data/persist | grep -Eq "^[0-9a-f]{64}$"' || fail "no node-persist file in /data/persist/"
+  dk exec "$NAME" sh -c '[ -z "$(ls -A /app/.node-persist)" ] && [ -z "$(ls -A /app/front/build/uploads)" ]' || fail "data written to the image paths"
+  [ "$(dk inspect --format '{{.Config.User}}' "$NAME")" = 10001:10001 ] || fail "not uid 10001"
 fi
 
 step "restart: rooms, list and uploads survive"

@@ -18,7 +18,14 @@ name: release
 #   secrets.DOKPLOY_WEBHOOK  Dokploy deploy-webhook URL, POSTed after :latest is pushed.
 #                         Unset/empty = a notice is printed and the run still succeeds.
 #
-# The build-scan-push workflow (deploy.yml) is untouched: it keeps pushing :ci + :<sha> only.
+# The build-scan-push workflow (build-scan-push.yml) is untouched: it keeps pushing :ci + :<sha> only.
+#
+# hosh-deploy (box standard, Decision #16): after a FINAL release tag vX.Y.Z (not a prerelease, not branch
+# mode) the `deploy` job runs deploy.yml → hosh-deploy on the box (auto-rollback). It is a no-op with a
+# notice while the repo has no HOSH_DEPLOY_KEY secret (before the cutover the box still runs the legacy
+# compose, which pulls :vX.Y.Z / :latest by hand, as before). Repo variable HOSH_AUTODEPLOY=false disables it.
+# Before anything is pushed, the candidate must pass the container smoke in both box layouts: `legacy`
+# (today's compose) and `template` (docker-compose.example.yml).
 on:
   push:
     tags: ['v*']
@@ -37,6 +44,9 @@ jobs:
     # Tag pushes and manual runs always go; branch pushes only when DEPLOY_TRIGGER == 'main'.
     if: github.event_name != 'push' || github.ref_type == 'tag' || vars.DEPLOY_TRIGGER == 'main'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.primary }}
+      deployable: ${{ steps.meta.outputs.deployable }}
     steps:
       - uses: actions/checkout@v7
       - name: compute release tags
@@ -63,6 +73,12 @@ jobs:
           fi
           echo "primary=$primary" >> "$GITHUB_OUTPUT"
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          # hosh-deploy accepts final release tags only
+          if [ "$REF_TYPE" = tag ] && printf '%s' "$REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deployable=false" >> "$GITHUB_OUTPUT"
+          fi
           echo "release tags: :$primary :$SHA (latest=$latest)"
       - uses: docker/setup-buildx-action@v4
       - uses: docker/login-action@v4
@@ -85,6 +101,10 @@ jobs:
           severity: CRITICAL
           exit-code: ${{ vars.TRIVY_POLICY == 'warn' && '0' || '1' }}
           ignore-unfixed: true
+      - name: Container smoke, legacy box compose
+        run: bash scripts/smoke.sh ghcr.io/pazka/drawtogether:candidate legacy
+      - name: Container smoke, hosh-deploy compose (docker-compose.example.yml)
+        run: bash scripts/smoke.sh ghcr.io/pazka/drawtogether:candidate template
       - name: push release tags
         env:
           PRIMARY: ${{ steps.meta.outputs.primary }}
@@ -113,3 +133,14 @@ jobs:
             exit 0
           fi
           curl -fsS -X POST "$DOKPLOY_WEBHOOK"
+
+  # Box standard (Decision #16): a final release goes live through hosh-deploy on the hosh.it box, which
+  # verifies it (healthz, POST_DEPLOY capability smoke, HTTPS) and rolls back by itself.
+  # No HOSH_DEPLOY_KEY secret (before the cutover) ⇒ deploy.yml prints a notice and deploys nothing.
+  deploy:
+    needs: release
+    if: needs.release.outputs.deployable == 'true' && vars.HOSH_AUTODEPLOY != 'false'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.release.outputs.tag }}
+    secrets: inherit

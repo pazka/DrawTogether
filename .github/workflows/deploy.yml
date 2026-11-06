@@ -1,44 +1,50 @@
-name: build-scan-push
-# Phase-2 CI (hosh.it): build -> Trivy gate (CRITICAL) -> push ghcr :ci + :sha.
-# Deliberately does NOT touch :latest - the box runs known-good mirrors. Promote a
-# validated build with: docker buildx imagetools create -t ghcr.io/pazka/drawtogether:latest ghcr.io/pazka/drawtogether:<sha>
+name: deploy
+
+# Deploy a release to the hosh.it box through hosh-deploy (box standard, Decision #16).
+# - called by release.yml after a successful release (auto-deploy; repo variable
+#   HOSH_AUTODEPLOY=false turns that off)
+# - or by hand: Actions → deploy → "vX.Y.Z" (redeploy / roll forward), "rollback" or "status".
+# The box only accepts: a release tag whose image exists on GHCR, for THIS app (the SSH key is bound
+# to it on the box). It verifies the new version and rolls back by itself if it is not healthy.
+# Secret HOSH_DEPLOY_KEY (per repo) = private half of the app's deployer key; unset ⇒ job skipped.
 on:
-  push:
-    branches: [master]
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag (vX.Y.Z), 'rollback' or 'status'"
+        required: true
+
 permissions:
   contents: read
-  packages: write
+
+concurrency:
+  group: hosh-deploy
+  cancel-in-progress: false
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          load: true
-          tags: ghcr.io/pazka/drawtogether:candidate
-      # Guardrail (pazka/hosh-management#5): never push an image whose Node is EOL or unpatched.
-      - name: Node version guardrail
-        run: bash scripts/check-node-version.sh ghcr.io/pazka/drawtogether:candidate
-      - name: Trivy gate (fail on CRITICAL)
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ghcr.io/pazka/drawtogether:candidate
-          severity: CRITICAL
-          exit-code: "1"
-          ignore-unfixed: true
-      - name: push ci + sha tags
-        if: success()
+      - name: hosh-deploy on the box
+        env:
+          KEY: ${{ secrets.HOSH_DEPLOY_KEY }}
+          VERSION: ${{ inputs.version }}
         run: |
-          docker tag ghcr.io/pazka/drawtogether:candidate ghcr.io/pazka/drawtogether:ci
-          docker tag ghcr.io/pazka/drawtogether:candidate ghcr.io/pazka/drawtogether:${{ github.sha }}
-          docker push ghcr.io/pazka/drawtogether:ci
-          docker push ghcr.io/pazka/drawtogether:${{ github.sha }}
+          set -euo pipefail
+          if [ -z "$KEY" ]; then echo "::notice::HOSH_DEPLOY_KEY is not set: nothing deployed"; exit 0; fi
+          case "$VERSION" in
+            rollback|status) cmd="$VERSION" ;;
+            v[0-9]*.[0-9]*.[0-9]*) cmd="deploy $VERSION" ;;
+            *) echo "::error::version must be vX.Y.Z, rollback or status (got '$VERSION')"; exit 1 ;;
+          esac
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/hosh && chmod 600 ~/.ssh/hosh
+          # the box's host key (pinned: a different key = not our box → refuse)
+          echo "54.37.70.57 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOjrBFwjPmbkcjJNWK5JvQPEGWWOewzM8oYYCCfU9igb" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/hosh -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              -o ConnectTimeout=20 deployer@54.37.70.57 "$cmd"

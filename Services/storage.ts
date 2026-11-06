@@ -3,9 +3,11 @@
 import persist = require('node-persist')
 import {On, send} from "./events";
 import {migrateMd5ToSha256} from "./persistMigration";
+import {persistDir} from "./paths";
 
 let ready = false
 let initializing: Promise<void> = null
+let dir: string = null
 
 let isDequeuingJobs = false
 let jobQueue: Function[] = []
@@ -29,7 +31,9 @@ const operationWorker = setInterval(() => {
 function init(): Promise<void> {
     if (!initializing) {
         initializing = (async () => {
-            const options = await persist.init( {})
+            // PERSIST_DIR unset: node-persist's default (.node-persist/storage under the cwd), as always
+            const options = await persist.init(persistDir ? {dir: persistDir} : {})
+            dir = options.dir
             // node-persist 4 names files sha256(key) instead of md5(key): copy the 3.x files before
             // the first read, or every existing room would vanish (MIGRATIONS.md)
             migrateMd5ToSha256(options.dir)
@@ -67,6 +71,11 @@ async function safeRemove(id: string) {
     })
 }
 
+
+export async function storeDir(): Promise<string> {
+    await init()
+    return dir
+}
 
 export async function getRooms() {
     return await safeGet('rooms')

@@ -1,0 +1,22 @@
+# Rendered by hosh-deploy on the first deploy (copied at `register`) into
+# /root/hosh-deploy/edge/traefik/dynamic/drawtogether.yml. @@TOKENS@@ are filled on the box.
+# hosh.it box standard: edge Traefik (host network, file provider) → loopback port of the container.
+# REVERT = delete this file (Traefik hot-reloads the directory).
+http:
+  routers:
+    drawtogether:
+      rule: "Host(`@@HOST@@`)"
+      service: drawtogether
+      entryPoints: [@@ENTRYPOINT@@]
+      middlewares: [drawtogether-hsts]
+      tls: @@TLS@@
+  middlewares:
+    drawtogether-hsts:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+  services:
+    drawtogether:
+      loadBalancer:
+        servers:
+          - url: "http://@@BIND@@"

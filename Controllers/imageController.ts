@@ -1,6 +1,7 @@
 ﻿import fs = require("fs");
 import path = require("path");
 import {addImgPathInRoom} from "./roomController";
+import {uploadsDir} from "../Services/paths";
 
 
 export const validFormats = [
@@ -16,7 +17,7 @@ export function isFormatValid(format: string) {
 
 export function writeImage(originalName: string, roomId: string, layerId: string, tempPath: string) {
     return new Promise((resolve,reject)=>{
-        const targetFolder = path.join(__dirname, `../front/build/uploads/${roomId}`);
+        const targetFolder = path.join(uploadsDir, `${roomId}`);
 
         if (!fs.existsSync(targetFolder)) {
             fs.mkdirSync(targetFolder, {recursive: true});
