@@ -41,8 +41,14 @@ bash scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:smoke hardened
 
 ## CI (`.github/workflows/ci.yml`)
 
-PRs, `master`, `agent/**`, all gates: `server tests (node 20|26)`, `container smoke (deployed)`,
+PRs, `master`, `agent/**`, all gates: `server tests (node 26)`, `container smoke (deployed)`,
 `container smoke (hardened)`, `upgrade smoke (node-persist 3 -> 4)`.
+
+Node guardrail (`scripts/check-node-version.sh <image>`, pazka/hosh-management#5): the built image's Node must
+be an LTS line (22/24/26) at or above its patched minimum (CVE-2026-111497). Runs in `container smoke` after
+the build, and in `release.yml` / `deploy.yml` before any push; `container smoke (deployed)` also checks it
+refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node:26.13.0-alpine@sha256:…`
+(Dependabot `docker` bumps it).
 
 ## What is covered
 
