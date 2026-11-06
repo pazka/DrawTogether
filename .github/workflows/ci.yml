@@ -19,7 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '26']
+        # Node 26 LTS only (Node 20 is EOL; CVE-2026-111497, pazka/hosh-management#5)
+        node: ['26']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: npm ci --no-audit --no-fund
@@ -43,6 +44,19 @@ jobs:
           load: true
           push: false
           tags: drawtogether:smoke
+      # Guardrail: the runtime Node must be a supported LTS line at or above its patched minimum.
+      - name: Node version guardrail
+        run: bash scripts/check-node-version.sh drawtogether:smoke
+      # Test of the test: an unpatched Node 24 must be refused (and for that reason, not a pull error).
+      - name: Node version guardrail refuses an unpatched Node
+        if: matrix.mode == 'deployed'
+        run: |
+          set -u
+          if out=$(bash scripts/check-node-version.sh node:24.21.0-alpine 2>&1); then
+            echo "$out"; echo "::error::the guardrail accepted Node 24.21.0"; exit 1
+          fi
+          echo "$out"
+          grep -q 'runs Node 24.21.0 < 24.22.1' <<<"$out"
       - run: bash scripts/smoke.sh drawtogether:smoke ${{ matrix.mode }}
 
   upgrade:
