@@ -55,7 +55,7 @@ jobs:
           if out=$(bash scripts/check-node-version.sh node:24.21.0-alpine 2>&1); then
             echo "$out"; echo "::error::the guardrail accepted Node 24.21.0"; exit 1
           fi
-          echo "$out"
+          echo "expected refusal: ${out#::error::}"   # stripped: no red annotation on a green run
           grep -q 'runs Node 24.21.0 < 24.22.1' <<<"$out"
       - run: bash scripts/smoke.sh drawtogether:smoke ${{ matrix.mode }}
 
