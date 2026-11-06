@@ -30,6 +30,7 @@ docker run --rm -v "$PWD":/src:ro -v "$PWD/.tsc-out":/out node:26-alpine sh -c \
 docker build -t drawtogether:smoke .
 bash scripts/smoke.sh drawtogether:smoke deployed   # like docker-compose.yml
 bash scripts/smoke.sh drawtogether:smoke hardened   # non-root, read-only rootfs
+bash scripts/smoke.sh drawtogether:smoke legacy     # exactly the box's legacy compose (uid 1000, bind mounts)
 
 # node-persist 3 -> 4 upgrade smoke: build the last node-persist 3 master (ae2d4d4) as the old image
 git worktree add /tmp/dt-np3 ae2d4d4 && docker build -t drawtogether:np3 /tmp/dt-np3
@@ -42,7 +43,7 @@ bash scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:smoke hardened
 ## CI (`.github/workflows/ci.yml`)
 
 PRs, `master`, `agent/**`, all gates: `server tests (node 26)`, `container smoke (deployed)`,
-`container smoke (hardened)`, `upgrade smoke (node-persist 3 -> 4)`.
+`container smoke (hardened)`, `container smoke (legacy)`, `upgrade smoke (node-persist 3 -> 4)`.
 
 Node guardrail (`scripts/check-node-version.sh <image>`, pazka/hosh-management#5): the built image's Node must
 be an LTS line (22/24/26) at or above its patched minimum (CVE-2026-111497). Runs in `container smoke` after
@@ -63,7 +64,17 @@ presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
 byte-for-byte its output (CRLF); the `fs-extra` `copySync` call `build.js` uses.
 
 `scripts/smoke.sh`: the built image — new room, REST, front served, engine.io handshake, image upload to the
-uploads volume and served back, no crash in the logs; in both modes.
+uploads volume and served back, the in-container capability smoke, a `docker restart` after which the room
+list, rooms and uploads are byte-identical, no crash in the logs; in every mode. Mode `legacy` is the box's
+legacy compose for draw.hosh.it verbatim (uid 1000, `sysctls: net.ipv4.ip_unprivileged_port_start=0`,
+no-new-privileges, cap_drop ALL, host bind mounts `./front/build/uploads` and `./.node-persist` owned by 1000,
+port 80) and also checks the files land in those host dirs: every release must keep working with it until the
+hosh-deploy cutover.
+
+`scripts/capability-smoke.js` (Node built-ins + `test/sio-poll.js`, runs inside the container): room list, the
+front for a room, an import read back, an image upload stored and served back, a Socket.IO client joining the
+room and receiving it. Everything happens in one fixed room `hosh-deploy-smoke` (overwritten on each run,
+expires like any room), so it is safe to run against production after each deploy.
 
 `test/persistMigration.test.js` (6 tests): the node-persist 3 -> 4 data migration (`Services/persistMigration`)
 on a temp dir in the 3.x layout (`md5(key)` files, synthetic rooms) read back with the locked node-persist 4:
