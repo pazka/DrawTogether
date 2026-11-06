@@ -1,6 +1,6 @@
 # security-autofix.yml — drop into .github/workflows/ of each service repo
 # AFTER the owner installs github.com/apps/claude on pazka repos.
-# On a failed deploy.yml run (Trivy CRITICAL gate), opens/refreshes an issue
+# On a failed build-scan-push.yml run (Trivy CRITICAL gate), opens/refreshes an issue
 # mentioning @claude so the Claude GitHub App picks it up and proposes a fix PR.
 name: security-autofix
 

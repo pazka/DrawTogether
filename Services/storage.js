@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.storeDir = storeDir;
 exports.getRooms = getRooms;
 exports.saveRooms = saveRooms;
 exports.getRoom = getRoom;
@@ -17,8 +18,10 @@ exports.removeRoom = removeRoom;
 const persist = require("node-persist");
 const events_1 = require("./events");
 const persistMigration_1 = require("./persistMigration");
+const paths_1 = require("./paths");
 let ready = false;
 let initializing = null;
+let dir = null;
 let isDequeuingJobs = false;
 let jobQueue = [];
 function recursivelyExecJobStack(nbFnToExec) {
@@ -37,7 +40,8 @@ const operationWorker = setInterval(() => {
 function init() {
     if (!initializing) {
         initializing = (() => __awaiter(this, void 0, void 0, function* () {
-            const options = yield persist.init({});
+            const options = yield persist.init(paths_1.persistDir ? { dir: paths_1.persistDir } : {});
+            dir = options.dir;
             (0, persistMigration_1.migrateMd5ToSha256)(options.dir);
             ready = true;
         }))();
@@ -72,6 +76,12 @@ function safeRemove(id) {
         return new Promise(resolve => {
             safeOperation(() => persist.removeItem(id).then(resolve));
         });
+    });
+}
+function storeDir() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield init();
+        return dir;
     });
 }
 function getRooms() {

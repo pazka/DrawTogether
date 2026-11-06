@@ -6,6 +6,7 @@ exports.writeImage = writeImage;
 const fs = require("fs");
 const path = require("path");
 const roomController_1 = require("./roomController");
+const paths_1 = require("../Services/paths");
 exports.validFormats = [
     ".png", ".jpg", ".jpeg", ".svg"
 ];
@@ -16,7 +17,7 @@ function isFormatValid(format) {
 }
 function writeImage(originalName, roomId, layerId, tempPath) {
     return new Promise((resolve, reject) => {
-        const targetFolder = path.join(__dirname, `../front/build/uploads/${roomId}`);
+        const targetFolder = path.join(paths_1.uploadsDir, `${roomId}`);
         if (!fs.existsSync(targetFolder)) {
             fs.mkdirSync(targetFolder, { recursive: true });
         }

@@ -34,9 +34,16 @@ COPY --from=front /front/build ./front/build
 
 # Writable data dirs (normally volumes), owned by node (uid 1000) so the app also starts as
 # non-root when they are not mounted: upload root (multer temp dir front/build/uploads/.tmp)
-# and the node-persist room store
-RUN mkdir -p front/build/uploads .node-persist && chown node:node front/build/uploads .node-persist
+# and the node-persist room store. Legacy box compose: bind mounts on these two paths, port 80.
+# hosh-deploy compose (docker-compose.example.yml): uid 10001, one named volume at /data
+# (UPLOADS_DIR=/data/uploads, PERSIST_DIR=/data/persist, PORT=8000); /data is owned by 10001 so a
+# fresh volume starts writable.
+RUN mkdir -p front/build/uploads .node-persist /data && chown node:node front/build/uploads .node-persist \
+ && chown 10001:10001 /data
 
 EXPOSE 80
+
+# GET /healthz on $PORT (default 80): uploads + room store writable, room list readable
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["node", "/app/scripts/healthcheck.js"]
 
 CMD [ "npm", "run","start-prod" ]

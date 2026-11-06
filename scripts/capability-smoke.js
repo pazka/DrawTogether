@@ -2,7 +2,7 @@
 //
 //   node /app/scripts/capability-smoke.js [base URL, default http://127.0.0.1:$PORT or :80]
 //
-// Proves the whiteboard works, not just that something answers: the room list, the front for a room,
+// Proves the whiteboard works, not just that something answers: /healthz, the room list, the front for a room,
 // a write round-trip (import, read back), an image upload stored and served back, and a Socket.IO client
 // that joins the room and receives it. Everything happens in ONE fixed room (`hosh-deploy-smoke`, created
 // once, overwritten on every run, expires like any room), so repeated runs never pile up data.
@@ -46,6 +46,14 @@ async function getJson(path) {
 }
 
 async function main() {
+    await check('healthz', async () => {
+        const {res, text} = await get('/healthz')
+        const body = JSON.parse(text)
+        expect(res.status === 200 && body.status === 'ok' && body.uploads === 'writable' && body.store === 'writable',
+            `${res.status} ${text}`)
+        return text
+    })
+
     await check('room list', async () => {
         const all = await getJson('/api/room/all')
         expect(Array.isArray(all), 'not a JSON array')

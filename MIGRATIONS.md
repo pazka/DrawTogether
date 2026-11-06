@@ -3,6 +3,15 @@
 Changes to what is stored on the persist volume (`/app/.node-persist`, node-persist files in `storage/`).
 Newest first.
 
+## v1.2.0 — hosh-deploy layout (box cutover, DEPLOY.md §5)
+
+No format change. The image can now keep its data elsewhere: `UPLOADS_DIR` / `PERSIST_DIR` (defaults =
+the legacy paths). The hosh-deploy compose uses one named volume `drawtogether-data`: `/data/uploads` (= old
+`front/build/uploads`) and `/data/persist` (= old `.node-persist/storage`, md5 originals included). The data
+move is a byte copy (`cp -a`, then `chown -R 10001:10001`); the legacy dirs are left untouched for rollback.
+First start on the volume logs `0 copied, <n> already migrated, 0 skipped`. Dropping the md5 originals is
+still the separate later step below.
+
 ## 2026-10-26 — node-persist 3.1.3 → 4.0.4: storage file names md5 → sha256
 
 **Why.** node-persist stores each key (`rooms`, `room-<id>`) in one file `storage/<hash(key)>` containing

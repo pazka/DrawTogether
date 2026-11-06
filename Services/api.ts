@@ -7,16 +7,17 @@ import fs = require("fs");
 import {isFormatValid, validFormats, writeImage} from "../Controllers/imageController";
 import {RoomDTO} from "../DTOs/RoomDTO";
 import {On, send} from "./events";
+import {uploadsDir} from "./paths";
 
 const router = express.Router()
 const roomController = require('../Controllers/roomController')
 
 
 // Multer temp files must live on the same filesystem as the final upload folder
-// (imageController renames them into ../front/build/uploads/<roomId>, which is a bind
-// mount in production: a rename across mounts fails with EXDEV). It also keeps multer's
+// (imageController renames them into <uploads>/<roomId>, which is a bind mount / volume
+// in production: a rename across mounts fails with EXDEV). It also keeps multer's
 // startup mkdir inside a writable volume when the container runs as non-root.
-const uploadTmpDir = path.join(__dirname, "../front/build/uploads/.tmp");
+const uploadTmpDir = path.join(uploadsDir, ".tmp");
 
 const upload = multer({
     dest: uploadTmpDir

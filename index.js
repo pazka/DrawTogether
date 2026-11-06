@@ -57,6 +57,8 @@ const api_1 = __importDefault(require("./Services/api"));
 const sockets = __importStar(require("./Services/sockets"));
 const roomController = __importStar(require("./Controllers/roomController"));
 const env_1 = __importDefault(require("./Services/env"));
+const paths_1 = require("./Services/paths");
+const health_1 = require("./Services/health");
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin)
@@ -72,7 +74,13 @@ app.use(cors({
 app.options('/{*splat}', cors());
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(morgan('combined'));
+app.use(morgan('combined', { skip: (req) => req.path === '/healthz' }));
+app.get('/healthz', function (req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const h = yield (0, health_1.health)();
+        res.status(h.ok ? 200 : 503).set('cache-control', 'no-store').json(h.body);
+    });
+});
 app.get('/', function (req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         let room = yield roomController.createNewRoom();
@@ -80,6 +88,7 @@ app.get('/', function (req, res, next) {
         next();
     });
 });
+app.use('/uploads', express.static(paths_1.uploadsDir));
 app.use('/', express.static(path.join(__dirname, 'front/build/')));
 app.get('/:roomId', (req, res, next) => {
     if (!req.params.roomId.includes('.'))

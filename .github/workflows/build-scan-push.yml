@@ -1,0 +1,46 @@
+name: build-scan-push
+# (was deploy.yml: renamed when deploy.yml became the hosh-deploy workflow; the name, which
+# security-autofix.yml listens to, is unchanged)
+# Phase-2 CI (hosh.it): build -> Trivy gate (CRITICAL) -> push ghcr :ci + :sha.
+# Deliberately does NOT touch :latest - the box runs known-good mirrors. Promote a
+# validated build with: docker buildx imagetools create -t ghcr.io/pazka/drawtogether:latest ghcr.io/pazka/drawtogether:<sha>
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/pazka/drawtogether:candidate
+      # Guardrail (pazka/hosh-management#5): never push an image whose Node is EOL or unpatched.
+      - name: Node version guardrail
+        run: bash scripts/check-node-version.sh ghcr.io/pazka/drawtogether:candidate
+      - name: Trivy gate (fail on CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/pazka/drawtogether:candidate
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: push ci + sha tags
+        if: success()
+        run: |
+          docker tag ghcr.io/pazka/drawtogether:candidate ghcr.io/pazka/drawtogether:ci
+          docker tag ghcr.io/pazka/drawtogether:candidate ghcr.io/pazka/drawtogether:${{ github.sha }}
+          docker push ghcr.io/pazka/drawtogether:ci
+          docker push ghcr.io/pazka/drawtogether:${{ github.sha }}
