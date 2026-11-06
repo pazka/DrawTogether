@@ -25,6 +25,9 @@ jobs:
           context: .
           load: true
           tags: ghcr.io/pazka/drawtogether:candidate
+      # Guardrail (pazka/hosh-management#5): never push an image whose Node is EOL or unpatched.
+      - name: Node version guardrail
+        run: bash scripts/check-node-version.sh ghcr.io/pazka/drawtogether:candidate
       - name: Trivy gate (fail on CRITICAL)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
