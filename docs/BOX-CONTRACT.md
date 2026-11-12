@@ -67,7 +67,7 @@ their own. Secrets live in a mode-600 env file next to the compose file on the b
     `node:26.x.y-<variant>@sha256:…` (or `gcr.io/distroless/nodejs26-debian13:nonroot@sha256:…`), keep
     `scripts/check-node-version.sh` and its CI/release step (it fails the build on an EOL or unpatched
     Node before anything is pushed; Trivy does not reliably flag the Node binary). Minimums today:
-    22.23.4 / 24.22.1 / 26.12.1; they rise with each Node security release.
+    22.23.5 / 24.22.3 / 26.13.1; they rise with each Node security release.
 
 ## The app SHOULD
 - Serve everything from its own origin (no CDN/fonts/analytics), with a strict CSP.

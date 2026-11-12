@@ -58,7 +58,7 @@ jobs:
             echo "$out"; echo "::error::the guardrail accepted Node 24.21.0"; exit 1
           fi
           sed 's/^::error::/expected refusal: /' <<<"$out"   # no red annotation on a green run
-          grep -q 'runs Node 24.21.0 < 24.22.1' <<<"$out"
+          grep -q 'runs Node 24.21.0 < 24.22.3' <<<"$out"
       - run: bash scripts/smoke.sh drawtogether:smoke ${{ matrix.mode }}
 
   cutover:

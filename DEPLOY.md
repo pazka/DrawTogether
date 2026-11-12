@@ -61,7 +61,7 @@ engine.io handshake `GET /socket.io/?EIO=4&transport=polling` → `"sid"`; HSTS 
 
 | Item | Value |
 |---|---|
-| Image | `ghcr.io/pazka/drawtogether:vX.Y.Z` (Node 26, `node:26.13.0-alpine@sha256`) |
+| Image | `ghcr.io/pazka/drawtogether:vX.Y.Z` (Node 26, `node:26.13.1-alpine@sha256`) |
 | Upstream | container :8000 → `127.0.0.1:9135` |
 | Edge | `/root/hosh-deploy/edge/traefik/dynamic/drawtogether.yml` (router `drawtogether@file`, resolver `le`, HSTS) |
 | Volume | docker volume `drawtogether-data` → `/data` (`uploads/`, `persist/`; in the monthly restic golden backup) |
