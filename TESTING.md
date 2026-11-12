@@ -51,7 +51,7 @@ PRs, `master`, `agent/**`, all gates: `server tests (node 26)`, `container smoke
 Node guardrail (`scripts/check-node-version.sh <image>`, pazka/hosh-management#5): the built image's Node must
 be an LTS line (22/24/26) at or above its patched minimum (CVE-2026-111497). Runs in `container smoke` after
 the build, and in `release.yml` / `build-scan-push.yml` before any push; `container smoke (deployed)` also checks it
-refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node:26.13.0-alpine@sha256:…`
+refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node:26.13.1-alpine@sha256:…`
 (Dependabot `docker` bumps it).
 
 ## What is covered

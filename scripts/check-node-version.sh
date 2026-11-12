@@ -9,9 +9,9 @@
 set -euo pipefail
 IMAGE=${1:?usage: check-node-version.sh IMAGE [NODE_BIN]}
 NODE_BIN=${2:-node}
-MIN_22=22.23.4
-MIN_24=24.22.1
-MIN_26=26.12.1
+MIN_22=22.23.5
+MIN_24=24.22.3
+MIN_26=26.13.1
 v=$(docker run --rm --network none --entrypoint "$NODE_BIN" "$IMAGE" -p 'process.versions.node')
 major=${v%%.*}
 case "$major" in

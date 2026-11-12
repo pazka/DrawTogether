@@ -1,7 +1,7 @@
 ﻿# ---- Stage 1: build the React front (build-only; only front/build reaches the runtime image) ----
 # react-scripts 4 (webpack 4) hashes with md4, which OpenSSL 3 (node >= 17) only offers through the
 # legacy provider. Same node line as the runtime stage (node 16 is EOL); the flag is build-only.
-FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS front
+FROM node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS front
 ENV NODE_OPTIONS=--openssl-legacy-provider
 
 WORKDIR /front
@@ -16,7 +16,7 @@ COPY front/ ./
 RUN npm run build
 
 # ---- Stage 2: runtime ----
-FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
+FROM node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 
 # Create app directory
 WORKDIR /app
