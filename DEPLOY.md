@@ -15,6 +15,8 @@ the Node guardrail and Trivy, pushes `:vX.Y.Z` + `:latest`, then its **`deploy`*
 waits healthy, checks `/healthz` on `127.0.0.1:9135` and through Traefik, runs `POST_DEPLOY`
 (`deploy/hosh-deploy.conf`) inside the container and **rolls back by itself** if any check fails.
 
+- Release: push the tag `vX.Y.Z`, or Actions → **release** on `master` with `version=vX.Y.Z` (creates the
+  tag and the GitHub release on the commit it built and scanned; fails if the tag exists on another commit).
 - No `HOSH_DEPLOY_KEY` secret (before the cutover) ⇒ the deploy job prints a notice and deploys nothing.
 - Prerelease tags (`v1.2.0-rc.1`) and branch-mode releases never deploy (and never move `:latest`).
 - Redeploy / roll back: Actions → **deploy** → `vX.Y.Z`, `rollback` or `status`. On the box:
