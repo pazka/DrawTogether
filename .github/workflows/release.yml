@@ -8,7 +8,8 @@ name: release
 #   - push to master (default branch) -> runs ONLY if repo variable DEPLOY_TRIGGER == 'main'
 #                                           (opt-in; unset = tag-only releases, the job is skipped).
 #                                           Pushes :main-<shortsha>, :<full sha> and :latest.
-#   - workflow_dispatch with "version"   -> exactly like a push of tag <version> (vX.Y.Z or vX.Y.Z-pre). The
+#   - workflow_dispatch with "version"   -> only from master; exactly like a push of tag <version>
+#                                           (vX.Y.Z or vX.Y.Z-pre). The
 #                                           tag is created on the dispatched commit (the one built and scanned)
 #                                           together with the GitHub release. Fails before any push if that
 #                                           tag already exists on another commit. Lets an agent release
@@ -73,8 +74,14 @@ jobs:
           set -euo pipefail
           # A dispatch with a version is treated exactly like a push of that tag.
           if [ -n "${INPUT_VERSION:-}" ]; then
-            if ! printf '%s' "$INPUT_VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
-              echo "::error::version must be vX.Y.Z or vX.Y.Z-pre (got '$INPUT_VERSION')"
+            # Only the default branch can be released this way: it is the only one that went through the QA gate.
+            if [ "${GITHUB_REF:-}" != "refs/heads/master" ]; then
+              echo "::error::a release with a version must be dispatched from master (got ${GITHUB_REF:-nothing}). Nothing was released."
+              exit 1
+            fi
+            # whole-string match (a line-based grep would accept a multi-line value)
+            if ! [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::version must be vX.Y.Z or vX.Y.Z-pre"
               exit 1
             fi
             # Never release twice: an existing tag must point at the dispatched commit (checked before any push).
