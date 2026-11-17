@@ -23,6 +23,13 @@ Goal: keep the base image, dependencies and Actions current **without changing b
 - Run installs and tests in containers (TESTING.md), not on the owner's machine.
 
 ## Agent system: QA gate, journal, "what happened to X"
+**Before any work in this repo, whatever the request:** read the hub `pazka/hosh-management`:
+`AGENTS.md` (how the hosh.it agents and the owner work together), `README.md` (every app, site, repo and
+journal), `roles/` (the full procedure of each agent: QA, Security, Developer, DevOps, dependency updates).
+`gh api repos/pazka/hosh-management/contents/AGENTS.md -H "Accept: application/vnd.github.raw"`
+(same for `README.md`, `roles/README.md`, `roles/qa.md`...). Those rules apply here; this file adds the
+repo's own.
+
 Canonical rules: `AGENTS.md` in the private hub `pazka/hosh-management`
 (`gh api repos/pazka/hosh-management/contents/AGENTS.md -H "Accept: application/vnd.github.raw"`).
 Summary, binding for every agent that works in this repo:
@@ -33,6 +40,10 @@ Summary, binding for every agent that works in this repo:
   answer each finding, ask again; QA re-tests the whole PR. Never approve your own PR. After QA's
   approval the agent that opened the PR merges it: this replaces "the owner merges" and "merge when
   CI is green" wherever this file still says so.
+- **Owner fast lane**: when the owner asks for a feature in a session he is in, do it end to end in
+  that session (discuss, develop, QA by a fresh independent QA subagent or a QA routine run now, merge,
+  release, deploy, show the live URL). Rules: AGENTS.md section 2b. The session that wrote the code never
+  writes the verdict.
 - **QA owns the tests and the visual regression**: every use case a user can reach (listed in
   `TESTING.md`), screenshots at 1400 / 1024 / 390 px, baselines in the repo. A wanted visual change
   must be announced in the PR. Never weaken a test or a gate to get green.
