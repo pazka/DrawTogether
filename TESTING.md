@@ -141,6 +141,8 @@ shot. Copied from pazka/MyMurderParty `visual/`.
 What the pictures show today, pinned on purpose (not bugs fixed by the harness):
 - The page has no mobile layout: at 390 px the phone browser zooms out to the content width (about 1200 px), and
   the controls bar overlaps the info box.
+- The runner's fonts have no glyph for the width buttons `⭠⭢` / `⭢⭠` of the text toolbar: B3 shows them as boxes
+  (same on every run; a local Chrome with other fonts draws arrows).
 - The info box shows the room name cut at the first non-word character (`getRoomName()` matches `\w*`):
   `/visual-empty` shows "visual". The harness uses room names without a hyphen.
 
