@@ -30,7 +30,7 @@ cleanup() {
   for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null || true; done
   dk rm -f "$NAME" >/dev/null 2>&1 || true
   dk volume rm -f "$VOL" >/dev/null 2>&1 || true
-  rm -rf "$P1" "$P2"
+  rm -rf "$P1" "$P2" "$P1.log" "$P2.log"
 }
 trap cleanup EXIT
 
@@ -51,11 +51,18 @@ COMMON=(--headless=new --no-sandbox --disable-gpu --mute-audio --no-first-run --
   --disable-background-networking "--host-resolver-rules=$RULES")
 "${CHROME:-google-chrome}" "${COMMON[@]}" \
   --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 \
-  --remote-debugging-port=$CDP_DESKTOP --user-data-dir="$P1" about:blank >/dev/null 2>&1 &
+  --remote-debugging-port=$CDP_DESKTOP --user-data-dir="$P1" about:blank >"$P1.log" 2>&1 &
 PIDS+=($!)
 "${CHROME:-google-chrome}" "${COMMON[@]}" \
-  --remote-debugging-port=$CDP_PHONE --user-data-dir="$P2" about:blank >/dev/null 2>&1 &
+  --remote-debugging-port=$CDP_PHONE --user-data-dir="$P2" about:blank >"$P2.log" 2>&1 &
 PIDS+=($!)
+# both DevTools endpoints up before the harness connects (Chrome's own output shown if one never comes)
+for port in $CDP_DESKTOP $CDP_PHONE; do
+  for _ in $(seq 1 120); do curl -fsS "http://127.0.0.1:$port/json/version" >/dev/null 2>&1 && break; sleep 0.5; done
+  curl -fsS "http://127.0.0.1:$port/json/version" >/dev/null 2>&1 || {
+    echo "VISUAL FAIL: Chrome (${CHROME:-google-chrome}) has no DevTools endpoint on 127.0.0.1:$port" >&2
+    tail -30 "$P1.log" "$P2.log" >&2; exit 1; }
+done
 
 rm -rf "$OUT"; mkdir -p "$OUT"; chmod 777 "$OUT"
 set +e
