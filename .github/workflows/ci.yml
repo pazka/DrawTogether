@@ -61,6 +61,34 @@ jobs:
           grep -q 'runs Node 24.21.0 < 24.22.3' <<<"$out"
       - run: bash scripts/smoke.sh drawtogether:smoke ${{ matrix.mode }}
 
+  visual:
+    # Visual regression (hosh-management AGENTS.md §3, use cases in TESTING.md "Visual use cases"): the built
+    # image runs as docker-compose.example.yml does, the board is seeded through the API, and the runner's
+    # Chrome (DevTools protocol, the image's own node, no package) shoots every case at 1400 / 1024 / 390
+    # against visual/baseline/. Nothing leaves the runner (every host but draw.test resolves to nothing).
+    name: visual regression
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: drawtogether:smoke
+      # A failing shot is also printed in this log (VISUAL-PNG lines): visual/from-log.mjs writes it back as a file.
+      - name: visual regression (screenshots vs baselines)
+        run: VISUAL_PRINT_NEW=1 CHROME="$(command -v google-chrome)" OUT=visual/out bash visual/run.sh drawtogether:smoke
+      - name: upload visual shots, diffs and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-${{ github.sha }}
+          path: visual/out/
+          retention-days: 14
+
   cutover:
     # Rehearsal of the box cutover legacy compose -> hosh-deploy (DEPLOY.md §5): rooms made under the legacy
     # compose, the documented data move into drawtogether-data, docker-compose.example.yml + .env.example
