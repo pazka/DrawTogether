@@ -46,4 +46,10 @@ EXPOSE 80
 # GET /healthz on $PORT (default 80): uploads + room store writable, room list readable
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["node", "/app/scripts/healthcheck.js"]
 
-CMD [ "npm", "run","start-prod" ]
+# Release tag, the `version` of every log line (release.yml passes it; any other build says "dev")
+ARG VERSION=dev
+ENV APP_VERSION=${VERSION}
+
+# node directly (what `npm run start-prod` ran): npm would print its banner lines on stdout, which must stay
+# one JSON object per line, and node gets docker's SIGTERM itself (the shutdown log line)
+CMD [ "node", "index.js", "prod" ]

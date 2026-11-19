@@ -133,6 +133,8 @@ jobs:
           context: .
           load: true
           tags: ghcr.io/pazka/drawtogether:candidate
+          # the `version` field of every log line (Dockerfile ARG VERSION)
+          build-args: VERSION=${{ steps.meta.outputs.primary }}
       # Guardrail (pazka/hosh-management#5): never push an image whose Node is EOL or unpatched.
       - name: Node version guardrail
         run: bash scripts/check-node-version.sh ghcr.io/pazka/drawtogether:candidate
