@@ -92,7 +92,9 @@ wait_up() { # until the API answers (after start or restart)
 step "start $IMAGE ($MODE)"
 dk run -d --name "$NAME" "${flags[@]}" "${vols[@]}" -p "127.0.0.1:${PORT}:${CPORT}" "$IMAGE" >/dev/null
 wait_up
-dk logs "$NAME" 2>&1 | grep -q "Listening on ${CPORT}" || fail "no 'Listening on ${CPORT}' line"
+# logs to a file first: under pipefail, `docker logs | grep -q` fails at random (grep exits, docker gets SIGPIPE)
+dk logs "$NAME" >logs.out 2>&1
+grep -q "Listening on ${CPORT}" logs.out || fail "no 'Listening on ${CPORT}' line"
 
 step "healthz + image HEALTHCHECK"
 code 200 "$BASE/healthz"
