@@ -236,6 +236,31 @@ test('server: the startup line (version, port, data dirs writable, config names 
     assert.ok(info.lines().some(o => o.event === 'persist_migration' && o.level === 'info'))
 })
 
+test('server: the startup line says store_dir_writable:false when PERSIST_DIR cannot be created', async () => {
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-log-ro-'))
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-logcwd-ro-'))
+    try {
+        fs.writeFileSync(path.join(data, 'afile'), '')
+        const env = {...process.env, PORT: '9139', UPLOADS_DIR: path.join(data, 'uploads'),
+            PERSIST_DIR: path.join(data, 'afile', 'persist')}
+        delete env.LOG_LEVEL
+        const proc = spawn(process.execPath, [path.join(ROOT, 'index.js'), 'prod'], {cwd, env})
+        let out = ''
+        proc.stdout.on('data', d => { out += d })
+        proc.stderr.on('data', () => {})
+        const until = Date.now() + 15000
+        while (!out.includes('"event":"startup"') && proc.exitCode === null && Date.now() < until) await sleep(50)
+        await sleep(200)
+        if (proc.exitCode === null) proc.kill('SIGKILL')
+        const starts = out.split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l)).filter(o => o.event === 'startup')
+        assert.equal(starts.length, 1, 'one startup line before the (pre-existing) store crash:\n' + out)
+        assert.deepEqual([starts[0].uploads_dir_writable, starts[0].store_dir_writable], [true, false])
+    } finally {
+        fs.rmSync(data, {recursive: true, force: true})
+        fs.rmSync(cwd, {recursive: true, force: true})
+    }
+})
+
 test('server: a 5xx (CORS refusal) is one error line with err; the answer is unchanged; nothing on stderr', async () => {
     const m = mark()
     const r = await fetch(`${info.base}/api/room/all?q=${m}`, {headers: {origin: 'https://evil.example', 'x-request-id': `req-${m}`, 'user-agent': `ua-${m}`}})

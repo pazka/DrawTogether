@@ -56,14 +56,14 @@ refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node
 
 ## What is covered
 
-`test/server.test.js` (13 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
+`test/server.test.js` (14 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
 socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` creates that room; unknown room
 → default room; import replaces a room; image upload stored under `front/build/uploads/<room>/`, linked in
 the layer, served back; non-image extension refused; CORS allow/deny; CORS preflight (`OPTIONS`) on any path;
 `/<name>.<ext>` creates no room; the startup line (mode DEV, port 9001) and no access log (no path, query, IP); two Socket.IO clients: join, `loadRoom`,
 presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
 
-`test/log.test.js` (16 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
+`test/log.test.js` (17 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
 
 `test/compile.test.js` (2 tests): `tsc -p tsconfig.json` compiles cleanly and every committed `*.js` is
 byte-for-byte its output (CRLF); the `fs-extra` `copySync` call `build.js` uses.
