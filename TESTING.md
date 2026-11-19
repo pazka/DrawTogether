@@ -46,7 +46,7 @@ bash scripts/upgrade-smoke.sh drawtogether:np3 drawtogether:smoke hardened
 
 PRs, `master`, `agent/**`, all gates: `server tests (node 26)`, `container smoke (deployed)`,
 `container smoke (hardened)`, `container smoke (legacy)`, `container smoke (template)`,
-`cutover smoke (legacy -> hosh-deploy)`, `upgrade smoke (node-persist 3 -> 4)`.
+`cutover smoke (legacy -> hosh-deploy)`, `upgrade smoke (node-persist 3 -> 4)`, `visual regression`.
 
 Node guardrail (`scripts/check-node-version.sh <image>`, pazka/hosh-management#5): the built image's Node must
 be an LTS line (22/24/26) at or above its patched minimum (CVE-2026-111497). Runs in `container smoke` after
@@ -111,6 +111,53 @@ room list).
 
 `test/imageController.test.js` (2 tests) loads the committed controller with a fake `fs` (slow `unlink`):
 a refused extension is deleted and never moved or linked; an accepted image is moved and linked.
+
+## Visual use cases (visual regression, hosh-management AGENTS.md §3)
+
+`visual/run.sh IMAGE` (CI job `visual regression`): the built image runs as `docker-compose.example.yml` does
+(uid 10001, read-only rootfs, tmpfs /tmp, cap_drop ALL, no-new-privileges, `PORT=8000`, all state in a fresh
+`/data` volume). `visual/shoot.mjs` runs with the image's own node (no package): it first **seeds** the room
+`visualboard` through the server's API (`GET /visualboard`, `POST /api/room/visualboard/import` with two layers
+"Plan" (3 styled texts) and "Notes" (1 text), and `POST /api/room/visualboard/1/upload` of a 1200x800 "floor plan"
+PNG built with zlib), reads it back, then two headless Chromes of the runner (mouse for 1400 / 1024, touch for 390)
+open `http://draw.test:9875`. Every other host resolves to nothing. A URL with "localhost" would make the front talk
+to `http://localhost:9001` (`front/src/services/env`). Every case below is shot at **1400, 1024 and 390 px** by a
+new visitor (new browser context) and compared with `visual/baseline/<id>-<width>.png` (tolerance: channel 24,
+0.1 % of the pixels). Any `alert()`/`confirm()` (Socket.IO "error", refused upload) or page exception fails the
+shot. Copied from pazka/MyMurderParty `visual/`.
+
+| id | page / state | steps |
+|---|---|---|
+| E1-new-room | `/visualempty`: a new room (one empty "Layer"), info box "1 users in this room.", controls bar, "+ Add Layer" | none |
+| B1-board | `/visualboard`: background image, the 3 texts of "Plan" (bold red, rotated + underlined blue, wide), layer "Plan" selected | none |
+| B2-board-second-layer | layer "Notes" selected: its text only, no background | click "Notes" |
+| B3-text-hover-toolbar | the edit toolbar of "Kitchen" (+ - width rotate b u color Delete) and its dashed frame. **1400 and 1024 only**: a phone has no hover | mouse over "Kitchen" |
+| B4-text-editing | "Garden" turned into an input (nothing saved) | double-click "Garden" |
+| B5-forms-open | "Change Background" and "Import a project" opened: two file inputs, buttons renamed "Close background upload" / "Close Upload" | click both |
+| U1-two-users | a second visitor named "Visual Bob" moves their mouse to (700, 160): "2 users in this room." and Bob's pointer label | second browser context, type the name, move |
+| D1-presentation | `/visualboard?displayOnly=true`: no info box, no controls, no delete buttons, no background (`App.js` hides `ImageDisplay` in that mode) | none |
+| N1-new-text-mode | `/visualnewtext`: after "New Text" the "New Text" label follows the pointer (300, 420), no text is created | click "New Text", move |
+
+What the pictures show today, pinned on purpose (not bugs fixed by the harness):
+- The page has no mobile layout: at 390 px the phone browser zooms out to the content width (about 1200 px), and
+  the controls bar overlaps the info box.
+- The runner's fonts have no glyph for the width buttons `⭠⭢` / `⭢⭠` of the text toolbar: B3 shows them as boxes
+  (same on every run; a local Chrome with other fonts draws arrows).
+- The info box shows the room name cut at the first non-word character (`getRoomName()` matches `\w*`):
+  `/visual-empty` shows "visual". The harness uses room names without a hyphen.
+
+Not covered, and why:
+- Dragging a text, the colour picker, renaming / adding / deleting a layer, choosing a real file in the forms:
+  each one saves to the room, so a later shot would see it. They need a room of their own per shot (next step).
+- "Save project" (a download), "New project" (a `prompt()`), the `?debug` console mode: nothing to see.
+- `GET /` (a new random room id, redirected): the id is random. E1 covers the same page.
+
+New or changed baselines (a wanted visual change, said in the PR): CI prints every failing shot in the log
+(`VISUAL-PNG` lines); `node visual/from-log.mjs <job log> visual/baseline --chrome` writes them back with their
+sha256 checked. Look at every picture before committing it. Baselines are only meaningful for the runner's Chrome
+(`visual/baseline/chrome.txt`); a local run with another Chrome differs by its fonts.
+Local run: `docker build -t drawtogether:smoke . && CHROME=/path/to/chrome bash visual/run.sh`
+(`ONLY=B3 bash visual/run.sh` shoots only the cases whose id starts with B3).
 
 ## Changes and upgrades (2026-10-19)
 
