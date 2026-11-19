@@ -48,7 +48,8 @@ start() { # start <image>
     -v "$NAME-uploads:/app/front/build/uploads" -v "$NAME-persist:/app/.node-persist" \
     -p "127.0.0.1:${PORT}:80" "$1" >/dev/null
   for _ in $(seq 1 60); do
-    dk logs "$NAME" 2>&1 | grep -q 'Listening on 80' && return 0
+    dk logs "$NAME" >logs.out 2>&1 || true # to a file: a pipe into grep -q races under pipefail
+    grep -q 'Listening on 80' logs.out && return 0
     [ "$(dk inspect --format '{{.State.Running}}' "$NAME")" = true ] || fail "container exited ($1)"
     sleep 1
   done
