@@ -16,7 +16,7 @@ and served from `/app/front/build`.
 # server tests: black-box, spawns `node index.js dev` on :9001; Node built-ins only
 docker run --rm -v "$PWD":/src:ro node:26-alpine sh -c \
   'mkdir /a && cd /src && tar --exclude=./node_modules -cf - . | tar -xf - -C /a && cd /a \
-   && npm ci && node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js \
+   && npm ci --ignore-scripts && node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js \
    test/persistMigration.test.js test/config.test.js'
 
 # recompile after editing a .ts (CRLF output, set in tsconfig): compile in a container, copy the JS out

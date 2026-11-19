@@ -8,7 +8,7 @@ WORKDIR /front
 
 COPY front/package*.json ./
 
-RUN npm ci --no-audit --no-fund
+RUN npm ci --ignore-scripts --no-audit --no-fund
 
 COPY front/ ./
 
@@ -24,7 +24,7 @@ WORKDIR /app
 # Install app dependencies
 COPY package*.json ./
 
-RUN npm ci --no-audit --no-fund
+RUN npm ci --ignore-scripts --no-audit --no-fund
 
 # Bundle app source
 COPY . .
