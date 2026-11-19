@@ -261,6 +261,49 @@ test('server: the startup line says store_dir_writable:false when PERSIST_DIR ca
     }
 })
 
+test('server: the startup line says uploads_dir_writable:false when UPLOADS_DIR/.tmp exists but cannot be written; it still serves', async () => {
+    // The case an operator reads this field for: a read-only mount, or legacy uid-1000 files under uid 10001.
+    // multer's mkdir succeeds on the existing .tmp, so the app starts. As root (the CI test container) the
+    // server runs as nobody (65534), because root writes anywhere; otherwise .tmp is chmod 0555.
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-log-upro-'))
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-logcwd-upro-'))
+    const tmp = path.join(data, 'uploads', '.tmp')
+    let proc
+    try {
+        fs.mkdirSync(tmp, {recursive: true})
+        fs.mkdirSync(path.join(data, 'persist'))
+        const asRoot = typeof process.getuid === 'function' && process.getuid() === 0
+        const opts = {cwd}
+        if (asRoot) {
+            for (const d of [data, path.join(data, 'persist'), cwd]) { fs.chownSync(d, 65534, 65534); fs.chmodSync(d, 0o755) }
+            fs.chmodSync(path.join(data, 'uploads'), 0o755)
+            fs.chmodSync(tmp, 0o755) // root-owned: nobody cannot write it
+            Object.assign(opts, {uid: 65534, gid: 65534})
+        } else {
+            fs.chmodSync(tmp, 0o555)
+        }
+        opts.env = {...process.env, PORT: '9140', UPLOADS_DIR: path.join(data, 'uploads'), PERSIST_DIR: path.join(data, 'persist')}
+        delete opts.env.LOG_LEVEL
+        proc = spawn(process.execPath, [path.join(ROOT, 'index.js'), 'prod'], opts)
+        let out = '', err = ''
+        proc.stdout.on('data', d => { out += d })
+        proc.stderr.on('data', d => { err += d })
+        const until = Date.now() + 15000
+        while (!out.includes('"event":"startup"') && proc.exitCode === null && Date.now() < until) await sleep(50)
+        assert.equal(proc.exitCode, null, 'the server keeps running:\n' + out + err)
+        const starts = out.split('\n').filter(Boolean).map(l => JSON.parse(l)).filter(o => o.event === 'startup')
+        assert.equal(starts.length, 1, out + err)
+        assert.deepEqual([starts[0].uploads_dir_writable, starts[0].store_dir_writable], [false, true])
+        const r = await fetch('http://127.0.0.1:9140/api/room/all')
+        assert.equal(r.status, 200, 'still serves')
+    } finally {
+        if (proc && proc.exitCode === null) proc.kill('SIGKILL')
+        try { fs.chmodSync(tmp, 0o755) } catch (e) { /* already gone */ }
+        fs.rmSync(data, {recursive: true, force: true})
+        fs.rmSync(cwd, {recursive: true, force: true})
+    }
+})
+
 test('server: a 5xx (CORS refusal) is one error line with err; the answer is unchanged; nothing on stderr', async () => {
     const m = mark()
     const r = await fetch(`${info.base}/api/room/all?q=${m}`, {headers: {origin: 'https://evil.example', 'x-request-id': `req-${m}`, 'user-agent': `ua-${m}`}})
@@ -358,7 +401,11 @@ test('server (LOG_LEVEL=debug): /healthz and requests at debug by route; sockets
 
 test('server: every stdout line is a standard JSON line; SIGTERM writes one shutdown line and exits 0', async () => {
     info.proc.kill('SIGTERM')
-    const code = await new Promise(r => info.proc.exitCode !== null ? r(info.proc.exitCode) : info.proc.on('exit', r))
+    const code = await new Promise((r, j) => {
+        if (info.proc.exitCode !== null) return r(info.proc.exitCode)
+        const t = setTimeout(() => j(new Error('no exit 5 s after SIGTERM')), 5000)
+        info.proc.on('exit', c => { clearTimeout(t); r(c) })
+    })
     assert.equal(code, 0)
     const lines = info.out.split('\n').filter(Boolean)
     for (const l of lines) {

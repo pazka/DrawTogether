@@ -63,7 +63,7 @@ the layer, served back; non-image extension refused; CORS allow/deny; CORS prefl
 `/<name>.<ext>` creates no room; the startup line (mode DEV, port 9001) and no access log (no path, query, IP); two Socket.IO clients: join, `loadRoom`,
 presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
 
-`test/log.test.js` (17 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
+`test/log.test.js` (18 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
 
 `test/compile.test.js` (2 tests): `tsc -p tsconfig.json` compiles cleanly and every committed `*.js` is
 byte-for-byte its output (CRLF); the `fs-extra` `copySync` call `build.js` uses.
