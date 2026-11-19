@@ -30,7 +30,7 @@ cleanup() {
   for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null || true; done
   dk rm -f "$NAME" >/dev/null 2>&1 || true
   dk volume rm -f "$VOL" >/dev/null 2>&1 || true
-  rm -rf "$P1" "$P2" "$P1.log" "$P2.log"
+  rm -rf "$P1" "$P2" "$P1.log" "$P2.log" "$P1.server.log"
 }
 trap cleanup EXIT
 
@@ -73,5 +73,7 @@ dk run --rm --network host --user 10001:10001 --read-only --cap-drop ALL --secur
   /v/shoot.mjs "http://draw.test:$PORT" "http://127.0.0.1:$PORT" "$@"
 rc=$?
 set -e
-dk logs "$NAME" 2>&1 | grep -qiE 'unhandled|TypeError|ReferenceError' && { echo "VISUAL FAIL: server logged an error" >&2; dk logs "$NAME" 2>&1 | grep -iE -B2 -A5 'unhandled|TypeError|ReferenceError' | head -40 >&2; rc=1; }
+# logs to a file first: under pipefail a pipe into grep -q can lose the match (SIGPIPE) and hide an error
+dk logs "$NAME" >"$P1.server.log" 2>&1 || true
+grep -qiE 'unhandled|TypeError|ReferenceError' "$P1.server.log" && { echo "VISUAL FAIL: server logged an error" >&2; grep -iE -B2 -A5 'unhandled|TypeError|ReferenceError' "$P1.server.log" | head -40 >&2; rc=1; }
 exit $rc
