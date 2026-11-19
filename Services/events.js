@@ -11,11 +11,6 @@ function sub(name, cb) {
     events[name].push(cb);
 }
 function send(name, data) {
-    if (name !== On.MOUSE_ACTION) {
-        console.group(`[${name}]`);
-        console.log(data);
-        console.groupEnd();
-    }
     if (!Object.keys(events).includes(name)) {
         events[name] = [];
     }

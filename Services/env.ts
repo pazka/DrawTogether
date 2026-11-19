@@ -4,9 +4,10 @@ import path = require("path");
 // @ts-ignore
 const env : any = JSON.parse(fs.readFileSync(path.join(__dirname, "../env.json")) )
 
-console.log("Environment : " + ((process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD"))
-
-const selected = env[(process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD"]
+const mode = (process.argv[2].toLowerCase() == "dev") ? "DEV" : "PROD"
+const selected = env[mode]
+// DEV or PROD (the startup line says which)
+selected.mode = mode
 
 // PORT (env) overrides env.json's port: the hosh-deploy compose listens on 8000, the legacy compose keeps 80
 if (process.env.PORT) {

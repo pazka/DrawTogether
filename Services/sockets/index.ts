@@ -2,6 +2,7 @@
 import {RoomDTO} from "../../DTOs/RoomDTO";
 import {On, send, sub} from "../events";
 import env from "../env";
+import {log} from "../log";
 
 const iolib = require('socket.io')
 let io: any
@@ -24,7 +25,8 @@ export async function init(httpServer: any) {
     });
 
     io.on('connection', (socket: any) => {
-        console.log('Client connected');
+        // never an IP, a room id or a payload: counts only, at debug
+        log.debug('socket_connect', 'client connected', {clients: io.engine.clientsCount})
         newSocketConnection(socket)
     });
 }
@@ -33,22 +35,10 @@ export async function init(httpServer: any) {
 function newSocketConnection(socket: any) {
     let currentRoom: string = null
 
-    socket.onAny((eventName: string, ...args: any) => {
-        if (eventName == "mouse")
-            return;
-
-        console.log(eventName, args)
-    });
-
-    socket.on('connect', () => {
-        console.log(`${socket.conn.remoteAddress} connected`);
-    });
-
     socket.on(allEvents.join, async (roomId: string) => {
         currentRoom = roomId
 
         socket.join(currentRoom)
-        console.log(`joined room-${currentRoom}`)
 
         socket.to(currentRoom).emit(allEvents.join, roomId)
         io.to(currentRoom).emit(allEvents.loadRoom, await getRoom(currentRoom))
@@ -72,7 +62,7 @@ function newSocketConnection(socket: any) {
 
     socket.on('disconnect', () => {
         io.to(currentRoom).emit(allEvents.leave, {id: socket.id})
-        console.log(`${socket.conn.remoteAddress} disconnected`);
+        log.debug('socket_disconnect', 'client disconnected', {clients: io.engine.clientsCount})
     });
     
     sub(On.EDIT_ROOM, (room : RoomDTO)=>{

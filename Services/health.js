@@ -42,6 +42,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.canWrite = canWrite;
+exports.within = within;
 exports.health = health;
 const fs = require("fs");
 const path = require("path");

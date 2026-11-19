@@ -51,7 +51,6 @@ const http = require("http");
 const httpServer = http.createServer(app);
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const morgan = require("morgan");
 const path = require("path");
 const api_1 = __importDefault(require("./Services/api"));
 const sockets = __importStar(require("./Services/sockets"));
@@ -59,6 +58,11 @@ const roomController = __importStar(require("./Controllers/roomController"));
 const env_1 = __importDefault(require("./Services/env"));
 const paths_1 = require("./Services/paths");
 const health_1 = require("./Services/health");
+const storage = __importStar(require("./Services/storage"));
+const log_1 = require("./Services/log");
+app.use((0, log_1.requestLogger)());
+if (app.get('env') !== 'production')
+    app.set('env', 'test');
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin)
@@ -74,7 +78,6 @@ app.use(cors({
 app.options('/{*splat}', cors());
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(morgan('combined', { skip: (req) => req.path === '/healthz' }));
 app.get('/healthz', function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const h = yield (0, health_1.health)();
@@ -97,11 +100,38 @@ app.get('/:roomId', (req, res, next) => {
 });
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')));
 app.use('/api/room', api_1.default);
+app.use(log_1.errorRecorder);
 Promise.all([
     sockets.init(httpServer)
 ]).then(() => {
     httpServer.listen(env_1.default.PORT, () => {
-        console.log('Listening on ' + env_1.default.PORT);
+        startupLine().catch(() => undefined);
     });
 });
+function startupLine() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let store = false;
+        try {
+            store = (0, health_1.canWrite)(yield (0, health_1.within)(storage.storeDir(), 3000));
+        }
+        catch (e) {
+            store = false;
+        }
+        log_1.log.info('startup', 'Listening on ' + env_1.default.PORT, {
+            port: env_1.default.PORT,
+            mode: env_1.default.mode,
+            uploads_dir_writable: (0, health_1.canWrite)(path.join(paths_1.uploadsDir, '.tmp')),
+            store_dir_writable: store,
+            log_level: log_1.log.level,
+            config: (0, log_1.configNamesSet)(),
+        });
+    });
+}
+for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+        log_1.log.info('shutdown', 'stopping', { signal, uptime_s: Math.round(process.uptime()) });
+        httpServer.close();
+        setTimeout(() => process.exit(0), 1000);
+    });
+}
 //# sourceMappingURL=index.js.map

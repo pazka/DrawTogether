@@ -4,6 +4,7 @@ import persist = require('node-persist')
 import {On, send} from "./events";
 import {migrateMd5ToSha256} from "./persistMigration";
 import {persistDir} from "./paths";
+import {migrationLog} from "./log";
 
 let ready = false
 let initializing: Promise<void> = null
@@ -36,7 +37,7 @@ function init(): Promise<void> {
             dir = options.dir
             // node-persist 4 names files sha256(key) instead of md5(key): copy the 3.x files before
             // the first read, or every existing room would vanish (MIGRATIONS.md)
-            migrateMd5ToSha256(options.dir)
+            migrateMd5ToSha256(options.dir, migrationLog())
             ready = true
         })()
         initializing.catch(() => { initializing = null })
