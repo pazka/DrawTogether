@@ -32,6 +32,9 @@ waits healthy, checks `/healthz` on `127.0.0.1:9135` and through Traefik, runs `
 |---|---|---|---|
 | `APP_IMAGE` | `ghcr.io/pazka/drawtogether:v1.2.0` | hosh-deploy | the only line a deploy changes |
 | `APP_BIND` | `127.0.0.1:9135` | box | loopback publish (port registry) |
+| `LOG_LEVEL` | unset = `info` | owner, optional | `debug` adds `/healthz`, every request and socket counts to the logs |
+
+`APP_VERSION` (the `version` of every log line) is baked into the image by `release.yml` (`--build-arg VERSION=<tag>`); other builds say `dev`.
 
 Fixed in `docker-compose.example.yml` (`environment:`), because they must match the port mapping and the volume:
 
@@ -175,8 +178,11 @@ After that, a rollback to an image older than v1.1.1 (node-persist 3) would see 
   `front/build/uploads`, `.node-persist/storage` under `/app`), so a release can still be pulled by the legacy
   compose until the cutover. New: `/healthz` (a room can no longer be named `healthz`) and an image
   `HEALTHCHECK` (the legacy container now shows a health status too).
-- Logs stay morgan "combined" + plain lines (pinned by the tests), not JSON; `/healthz` is not logged.
-  Client IPs in the access log are the docker gateway (the app trusts no `X-Forwarded-For`).
+- Logs follow the hosh.it standard (hosh-management AGENTS.md §11, TESTING.md "Logs"): one JSON object per
+  line on stdout with `version` = the release tag; no access log (Traefik has it), only 5xx (`request_failed`,
+  with `err`), requests slower than 1 s (`request_slow`), `startup`, `shutdown` and the room cleanup job.
+  Every answer carries `X-Request-Id` (the edge's when it is a plain token, else a new one). Never an IP, a
+  path, a query, a room id or a socket payload. `LOG_LEVEL=debug` (env file) adds `/healthz` and every request.
 - Rooms have no access control (the URL is the key); `GET /api/room/all` lists every id; uploads check the
   extension only (TESTING.md "Known gaps").
 - `mem_limit 512m`: body-parser accepts imports up to 100 MB.

@@ -5,7 +5,7 @@ the server does today so a Dependabot PR is judged on its CI run.
 
 ## What ships
 
-The image runs the **committed `*.js`** (`npm run start-prod` → `node index.js prod`; no `tsc` in the image).
+The image runs the **committed `*.js`** (`node index.js prod`, what `npm run start-prod` runs; no `tsc` in the image).
 The `*.ts` files are the sources those were compiled from. `front/` (CRA 4) is built in a Dockerfile stage
 and served from `/app/front/build`.
 
@@ -17,7 +17,7 @@ and served from `/app/front/build`.
 docker run --rm -v "$PWD":/src:ro node:26-alpine sh -c \
   'mkdir /a && cd /src && tar --exclude=./node_modules -cf - . | tar -xf - -C /a && cd /a \
    && npm ci --ignore-scripts && node --test --test-reporter=spec test/server.test.js test/imageController.test.js test/compile.test.js \
-   test/persistMigration.test.js test/config.test.js'
+   test/persistMigration.test.js test/config.test.js test/log.test.js'
 
 # recompile after editing a .ts (CRLF output, set in tsconfig): compile in a container, copy the JS out
 docker run --rm -v "$PWD":/src:ro -v "$PWD/.tsc-out":/out node:26-alpine sh -c \
@@ -56,12 +56,14 @@ refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node
 
 ## What is covered
 
-`test/server.test.js` (12 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
+`test/server.test.js` (13 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
 socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` creates that room; unknown room
 → default room; import replaces a room; image upload stored under `front/build/uploads/<room>/`, linked in
 the layer, served back; non-image extension refused; CORS allow/deny; CORS preflight (`OPTIONS`) on any path;
-`/<name>.<ext>` creates no room; morgan combined access log; two Socket.IO clients: join, `loadRoom`,
+`/<name>.<ext>` creates no room; the startup line (mode DEV, port 9001) and no access log (no path, query, IP); two Socket.IO clients: join, `loadRoom`,
 presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
+
+`test/log.test.js` (16 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
 
 `test/compile.test.js` (2 tests): `tsc -p tsconfig.json` compiles cleanly and every committed `*.js` is
 byte-for-byte its output (CRLF); the `fs-extra` `copySync` call `build.js` uses.
@@ -111,6 +113,45 @@ room list).
 
 `test/imageController.test.js` (2 tests) loads the committed controller with a fake `fs` (slow `unlink`):
 a refused extension is deleted and never moved or linked; an accepted image is moved and linked.
+
+## Logs (hosh-management AGENTS.md §11)
+
+`Services/log.ts` (+ committed `.js`): stdout only, one JSON object per line: `ts` (UTC ISO, ms), `level`, `service`
+(`drawtogether`), `version` (`APP_VERSION`, set by `release.yml` through the Dockerfile `ARG VERSION`; `dev` otherwise),
+`event`, `msg`, then the line's fields. `LOG_LEVEL` (debug|info|warn|error, default and anything else: info).
+
+| event | level | when / fields |
+|---|---|---|
+| `startup` | info | listening: `port`, `mode`, `uploads_dir_writable`, `store_dir_writable`, `log_level`, `config` (names of the variables set, never values); msg `Listening on <port>` (the smokes wait for it) |
+| `shutdown` | info | SIGTERM / SIGINT: `signal`, `uptime_s`; exits 0 after 1 s (node-persist's write queue) |
+| `request_failed` | error | an answer >= 500: `req_id`, `method`, `route`, `status`, `dur_ms`, `err` {type, message, stack} when Express had an error |
+| `request_slow` | warn | an answer slower than 1 s (same fields) |
+| `request` / `healthz` | debug | any other answer; `/healthz` never above debug |
+| `persist_migration` / `_skip` | info / warn | the node-persist 3 -> 4 migration lines (text unchanged, the smokes grep it) |
+| `room_cleanup_start` / `_done` | info | the cleanup job: `rooms`; then `dur_ms`, `checked`, `removed`, `kept_forever`, `rooms` |
+| `socket_connect` / `socket_disconnect` | debug | `clients` (a count) |
+
+- `route` is a template from `routeOf` (`/api/room/:roomId/import`, `/:roomId`, `/uploads/*`...), never the raw
+  path or query: a room id is the room's only key, so it never reaches the log (nor in `err`: request values are
+  replaced by `<hidden>`, the stack keeps only its frames). No IP, user agent, cookie, body or socket payload.
+- Every answer carries `X-Request-Id`: the incoming one if it is a plain token (`[A-Za-z0-9._:-]`, at most 64), else a
+  new UUID. Socket.IO requests do not go through Express (no header, no line).
+- Express no longer prints errors on stderr (its env is set to `test` unless `NODE_ENV=production`, which only
+  silences that print: the error answers are unchanged); the error goes into the `request_failed` line.
+- The image starts `node index.js prod` directly (npm printed banner lines on stdout and stood between docker's
+  SIGTERM and node). `scripts/smoke.sh` checks, in every mode, that every stdout line is a standard JSON line and
+  that the startup, shutdown (the restart) and migration lines are there.
+
+`test/log.test.js` pins: the line format and level filter; `errField`, `requestId`, `routeOf`, `urlParts`; on a real
+Express app with a fake clock, 5xx at error with `err`, exactly 1 s not slow / 1001 ms at warn, 4xx and `/healthz`
+(even a 503) silent at info and at debug when asked; then two real servers (`index.js`, info and debug): the startup
+line, a CORS refusal (500) as one error line with an unchanged answer and an empty stderr, `X-Request-Id`
+echo/replace, nothing at info for ordinary requests / `/healthz` / a bad JSON body / a socket client, at debug only
+route templates and socket counts (no room id, path, query, payload, IP), SIGTERM -> one shutdown line and exit 0,
+and the room cleanup job's two lines with counts and no room id. Each line of that code was mutated once
+(level filter, 64-char limit, header, route template, healthz level, `>= 500`, slow threshold, `err`, hiding,
+stack, Express env, error recorder, signal handler, socket payload / IP, event payload print, cleanup counts,
+migration lines, mode): a test fails for each.
 
 ## Visual use cases (visual regression, hosh-management AGENTS.md §3)
 
