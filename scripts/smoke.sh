@@ -165,6 +165,16 @@ code 200 "$BASE/uploads/$ROOM/pixel.png"
 cmp -s body.out pixel.png || fail "uploaded image lost across a restart"
 dk exec "$NAME" node /app/scripts/capability-smoke.js "http://127.0.0.1:${CPORT}" || fail "capability smoke after restart"
 
+step "logs: one JSON object per line on stdout (hosh-management AGENTS.md section 11)"
+dk logs "$NAME" 2>/dev/null >stdout.out   # stdout only
+[ -s stdout.out ] || fail "nothing on stdout"
+if grep -nv '^{"ts":"[0-9TZ:.-]*","level":"[a-z]*","service":"drawtogether","version":"[^"]*","event":"[a-z_]*",' stdout.out; then
+  fail "a stdout line is not a standard JSON log line"
+fi
+grep -q '"event":"startup","msg":"Listening on '"${CPORT}"'"' stdout.out || fail "no startup line"
+grep -q '"event":"shutdown"' stdout.out || fail "no shutdown line for the restart"
+grep -q '"event":"persist_migration"' stdout.out || fail "no persist_migration line"
+
 step "no crash in logs"
 if dk logs "$NAME" 2>&1 | grep -E 'Error: E[A-Z]+|UnhandledPromiseRejection|Uncaught'; then fail "errors in container log"; fi
 
