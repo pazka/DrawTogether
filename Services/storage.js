@@ -19,6 +19,7 @@ const persist = require("node-persist");
 const events_1 = require("./events");
 const persistMigration_1 = require("./persistMigration");
 const paths_1 = require("./paths");
+const log_1 = require("./log");
 let ready = false;
 let initializing = null;
 let dir = null;
@@ -42,7 +43,7 @@ function init() {
         initializing = (() => __awaiter(this, void 0, void 0, function* () {
             const options = yield persist.init(paths_1.persistDir ? { dir: paths_1.persistDir } : {});
             dir = options.dir;
-            (0, persistMigration_1.migrateMd5ToSha256)(options.dir);
+            (0, persistMigration_1.migrateMd5ToSha256)(options.dir, (0, log_1.migrationLog)());
             ready = true;
         }))();
         initializing.catch(() => { initializing = null; });

@@ -16,6 +16,7 @@ exports.init = init;
 const roomController_1 = require("../../Controllers/roomController");
 const events_1 = require("../events");
 const env_1 = __importDefault(require("../env"));
+const log_1 = require("../log");
 const iolib = require('socket.io');
 let io;
 var allEvents;
@@ -36,25 +37,16 @@ function init(httpServer) {
             }
         });
         io.on('connection', (socket) => {
-            console.log('Client connected');
+            log_1.log.debug('socket_connect', 'client connected', { clients: io.engine.clientsCount });
             newSocketConnection(socket);
         });
     });
 }
 function newSocketConnection(socket) {
     let currentRoom = null;
-    socket.onAny((eventName, ...args) => {
-        if (eventName == "mouse")
-            return;
-        console.log(eventName, args);
-    });
-    socket.on('connect', () => {
-        console.log(`${socket.conn.remoteAddress} connected`);
-    });
     socket.on(allEvents.join, (roomId) => __awaiter(this, void 0, void 0, function* () {
         currentRoom = roomId;
         socket.join(currentRoom);
-        console.log(`joined room-${currentRoom}`);
         socket.to(currentRoom).emit(allEvents.join, roomId);
         io.to(currentRoom).emit(allEvents.loadRoom, yield (0, roomController_1.getRoom)(currentRoom));
     }));
@@ -75,7 +67,7 @@ function newSocketConnection(socket) {
     }));
     socket.on('disconnect', () => {
         io.to(currentRoom).emit(allEvents.leave, { id: socket.id });
-        console.log(`${socket.conn.remoteAddress} disconnected`);
+        log_1.log.debug('socket_disconnect', 'client disconnected', { clients: io.engine.clientsCount });
     });
     (0, events_1.sub)(events_1.On.EDIT_ROOM, (room) => {
         io.to(room.id).emit(allEvents.loadRoom, room);

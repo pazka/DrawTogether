@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.removeUnusedRooms = removeUnusedRooms;
 exports.getRoom = getRoom;
 exports.fetchOrCreateRoom = fetchOrCreateRoom;
 exports.createNewRoom = createNewRoom;
@@ -59,6 +60,7 @@ const LayerDTO_1 = require("../DTOs/LayerDTO");
 const env_1 = __importDefault(require("../Services/env"));
 const node_persist_1 = require("node-persist");
 const storage_1 = require("../Services/storage");
+const log_1 = require("../Services/log");
 let allRoomIds = [];
 storage.getRooms().then(res => {
     var _a;
@@ -67,23 +69,26 @@ storage.getRooms().then(res => {
 const roomCleanUpTimeout = setInterval(removeUnusedRooms, env_1.default.RoomCleanUpInterval * 1000);
 function removeUnusedRooms() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("# Cleaning up room");
+        const started = Date.now();
+        const checked = allRoomIds.length;
+        log_1.log.info("room_cleanup_start", "room cleanup started", { rooms: checked });
         let newRoomIds = [...allRoomIds];
+        let keptForever = 0;
         for (let index = allRoomIds.length - 1; index >= 0; index--) {
             let room = yield getRoom(allRoomIds[index]);
-            console.log(`# Checking room ${room.id}`);
             if (room.cantDie) {
-                console.log(`The room : ${room.id} can't die !`);
+                keptForever++;
             }
             if (!room.cantDie && (Date.now() - room.lastUpdate > env_1.default.RoomTTL * 1000)) {
                 yield (0, node_persist_1.removeItem)(room.id);
                 newRoomIds.splice(index, 1);
-                console.log(`# Cleaned ${room.id}, last update : ${new Date(room.lastUpdate)}`);
             }
         }
         allRoomIds = newRoomIds;
         yield (0, storage_1.saveRooms)(newRoomIds);
-        console.log("# Room checked ");
+        log_1.log.info("room_cleanup_done", "room cleanup done", {
+            dur_ms: Date.now() - started, checked, removed: checked - newRoomIds.length, kept_forever: keptForever, rooms: newRoomIds.length,
+        });
     });
 }
 function getRoom(id) {

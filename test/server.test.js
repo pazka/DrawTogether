@@ -143,11 +143,21 @@ test('CORS preflight: OPTIONS on any path answers 204 for an allowed origin, 500
     }
 })
 
-test('requests are logged in Apache combined format (morgan)', async () => {
+test('startup: one JSON line, mode DEV (argv), port 9001 from env.json, default level info', () => {
+    const lines = log.split('\n').filter(l => l.includes('"event":"startup"')).map(l => JSON.parse(l))
+    assert.equal(lines.length, 1)
+    assert.deepEqual([lines[0].level, lines[0].mode, lines[0].port, lines[0].log_level, lines[0].msg],
+        ['info', 'DEV', 9001, 'info', 'Listening on 9001'])
+})
+
+test('requests are not access-logged (logging standard, test/log.test.js): no path, query, user agent or IP', async () => {
     const marker = ids()
-    await fetch(`${BASE}/api/room/all?m=${marker}`, {headers: {'user-agent': `ua-${marker}`}})
+    const r = await fetch(`${BASE}/api/room/all?m=${marker}`, {headers: {'user-agent': `ua-${marker}`}})
+    assert.equal(r.status, 200)
+    assert.match(r.headers.get('x-request-id'), /^[0-9a-f-]{36}$/)
     await new Promise(r => setTimeout(r, 100))
-    assert.match(log, new RegExp(`"GET /api/room/all\\?m=${marker} HTTP/1\\.1" 200 \\d+ "-" "ua-${marker}"`))
+    assert.ok(!log.includes(marker))
+    assert.ok(!log.includes('127.0.0.1'))
 })
 
 test('a top-level path with a dot (a file name) does not create a room', async () => {

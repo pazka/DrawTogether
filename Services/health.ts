@@ -6,7 +6,7 @@ import * as storage from "./storage";
 // GET /healthz: proves the app can do its job, not just that the process is up: the uploads dir and the room
 // store accept a write (a dotfile, ignored by express.static and node-persist), and the room list reads back.
 // Never exposes paths or errors.
-function canWrite(dir: string): boolean {
+export function canWrite(dir: string): boolean {
     const probe = path.join(dir, `.healthz-${process.pid}`);
     try {
         fs.mkdirSync(dir, {recursive: true});
@@ -18,7 +18,7 @@ function canWrite(dir: string): boolean {
     }
 }
 
-function within<T>(p: Promise<T>, ms: number): Promise<T> {
+export function within<T>(p: Promise<T>, ms: number): Promise<T> {
     return Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
 }
 

@@ -22,14 +22,12 @@
     "express": "^5.3.0",
     "http": "0.0.1-security",
     "js-queue": "^3.1.1",
-    "morgan": "^1.12.1",
     "multer": "^2.5.0",
     "node-persist": "^4.0.4",
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/morgan": "^1.9.3",
     "@types/node": "^26.6.6",
     "@types/node-persist": "^3.1.2",
     "fs-extra": "^11.4.1",

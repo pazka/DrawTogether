@@ -6,7 +6,6 @@ const httpServer = http.createServer(app);
 
 import cors = require('cors')
 import bodyParser = require('body-parser')
-import morgan = require('morgan')
 import path = require('path')
 
 import routes from './Services/api'
@@ -16,7 +15,16 @@ import * as roomController from './Controllers/roomController'
 import {getRoom} from "./Controllers/roomController";
 import env from "./Services/env"
 import {uploadsDir} from "./Services/paths"
-import {health} from "./Services/health"
+import {health, canWrite, within} from "./Services/health"
+import * as storage from "./Services/storage"
+import {log, requestLogger, errorRecorder, configNamesSet} from "./Services/log"
+
+// Logging standard (Services/log): X-Request-Id on every answer; only 5xx and slow answers are logged at info.
+app.use(requestLogger())
+// Express prints every error (stack, body-parser excerpts of the body) to stderr unless its env is "test";
+// errorRecorder puts it in the JSON request line instead. Answers are unchanged: finalhandler only treats
+// "production" differently, and that one is left as it is.
+if (app.get('env') !== 'production') app.set('env', 'test')
 
 app.use(cors({
     origin: function(origin, callback){
@@ -34,8 +42,6 @@ app.use(cors({
 app.options('/{*splat}', cors())
 app.use(bodyParser.json({limit:'100mb'}));
 app.use(bodyParser.urlencoded({ extended: true }));
-// the container healthcheck polls /healthz every 30 s: keep it out of the access log
-app.use(morgan('combined', {skip: (req: any) => req.path === '/healthz'}));
 
 // Before the room routes, or /healthz would create a room named "healthz"
 app.get('/healthz', async function (req, res) {
@@ -64,13 +70,40 @@ app.get('/:roomId', (req, res,next)=>{
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')))
 
 app.use('/api/room',routes)
+app.use(errorRecorder)
 //websocket
 
 Promise.all([
     sockets.init(httpServer)
 ]).then(()=>{
     httpServer.listen(env.PORT, () => {
-        console.log('Listening on ' + env.PORT)
+        startupLine().catch((): void => undefined)
     });
 })
+
+async function startupLine(): Promise<void> {
+    let store = false
+    try {
+        store = canWrite(await within(storage.storeDir(), 3000))
+    } catch (e) {
+        store = false
+    }
+    log.info('startup', 'Listening on ' + env.PORT, {
+        port: env.PORT,
+        mode: env.mode,
+        uploads_dir_writable: canWrite(path.join(uploadsDir, '.tmp')),
+        store_dir_writable: store,
+        log_level: log.level,
+        config: configNamesSet(),
+    })
+}
+
+// docker stop (SIGTERM; node is PID 1 in the image): one line, a moment for the room store's write queue, exit
+for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+        log.info('shutdown', 'stopping', {signal, uptime_s: Math.round(process.uptime())})
+        httpServer.close()
+        setTimeout(() => process.exit(0), 1000)
+    })
+}
 

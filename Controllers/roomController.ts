@@ -6,6 +6,7 @@ import {LayerDTO} from "../DTOs/LayerDTO";
 import env from "../Services/env"
 import {removeItem} from "node-persist";
 import {saveRooms} from "../Services/storage";
+import {log} from "../Services/log";
 
 let allRoomIds: string[] = []
 
@@ -15,28 +16,32 @@ storage.getRooms().then(res => {
 
 const roomCleanUpTimeout = setInterval(removeUnusedRooms, env.RoomCleanUpInterval * 1000)
 
-async function removeUnusedRooms() {
-    console.log("# Cleaning up room")
+// Background job: one line at start, one at the end with counts (never a room id: the id is the room's only key)
+export async function removeUnusedRooms() {
+    const started = Date.now()
+    const checked = allRoomIds.length
+    log.info("room_cleanup_start", "room cleanup started", {rooms: checked})
     let newRoomIds = [...allRoomIds]
+    let keptForever = 0
     for (let index = allRoomIds.length -1; index >= 0 ; index--){
         let room: RoomDTO = await getRoom(allRoomIds[index])
-        console.log(`# Checking room ${room.id}`)
         
         if(room.cantDie){
-            console.log(`The room : ${room.id} can't die !`)
+            keptForever++
         }
     
         if (!room.cantDie && (Date.now() - room.lastUpdate > env.RoomTTL * 1000)) {
             await removeItem(room.id)
 
             newRoomIds.splice(index,1)
-            console.log(`# Cleaned ${room.id}, last update : ${new Date(room.lastUpdate)}`)
         }
     }
     
     allRoomIds = newRoomIds
     await saveRooms(newRoomIds)
-    console.log("# Room checked ")
+    log.info("room_cleanup_done", "room cleanup done", {
+        dur_ms: Date.now() - started, checked, removed: checked - newRoomIds.length, kept_forever: keptForever, rooms: newRoomIds.length,
+    })
 }
 
 
