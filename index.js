@@ -93,11 +93,16 @@ app.get('/', function (req, res, next) {
 });
 app.use('/uploads', express.static(paths_1.uploadsDir));
 app.use('/', express.static(path.join(__dirname, 'front/build/')));
-app.get('/:roomId', (req, res, next) => {
-    if (!req.params.roomId.includes('.'))
-        roomController.fetchOrCreateRoom(req.params.roomId);
+app.get('/:roomId', (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.params.roomId.includes('.'))
+            yield roomController.fetchOrCreateRoom(req.params.roomId);
+    }
+    catch (e) {
+        return next(e);
+    }
     next();
-});
+}));
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')));
 app.use('/api/room', api_1.default);
 app.use(log_1.errorRecorder);

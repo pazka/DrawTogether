@@ -56,8 +56,11 @@ refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node
 
 ## What is covered
 
-`test/server.test.js` (14 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
-socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` creates that room; unknown room
+`test/server.test.js` (15 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
+socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` creates that room; with slow storage
+(`test/slow-persist.js`, a `node -r` preload that delays every node-persist write by 300 ms, second server on :9141)
+`GET /<name>` answers only once the room is saved and in `/api/room/all` (what the capability smoke checks right after),
+and two concurrent first visits list it once; unknown room
 → default room; import replaces a room; image upload stored under `front/build/uploads/<room>/`, linked in
 the layer, served back; non-image extension refused; CORS allow/deny; CORS preflight (`OPTIONS`) on any path;
 `/<name>.<ext>` creates no room; the startup line (mode DEV, port 9001) and no access log (no path, query, IP); two Socket.IO clients: join, `loadRoom`,
