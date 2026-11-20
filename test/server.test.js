@@ -9,6 +9,7 @@ const assert = require('node:assert/strict')
 const {spawn} = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const os = require('node:os')
 const {PollClient} = require('./sio-poll')
 
 const ROOT = path.join(__dirname, '..')
@@ -221,4 +222,48 @@ test('malformed multipart uploads get an error answer and do not take the server
     }
     assert.equal(server.exitCode, null, 'server process still running')
     assert.equal((await fetch(`${BASE}/api/room/${id}`)).status, 200)
+})
+
+// A second server whose node-persist writes take 300 ms (test/slow-persist.js): GET /<room> must answer only
+// once the room is saved and listed, as the capability smoke (hosh-deploy POST_DEPLOY) expects right after it.
+test('slow storage: GET /<name> answers only after the room is saved and listed; two first visits create it once', async () => {
+    const port = 9141
+    const base = `http://127.0.0.1:${port}`
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-slow-'))
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-slowcwd-'))
+    const slow = spawn(process.execPath, ['-r', path.join(__dirname, 'slow-persist.js'), path.join(ROOT, 'index.js'), 'prod'], {
+        cwd,
+        env: {...process.env, PORT: String(port), SLOW_PERSIST_MS: '300',
+            UPLOADS_DIR: path.join(data, 'uploads'), PERSIST_DIR: path.join(data, 'persist')},
+    })
+    let out = ''
+    slow.stdout.on('data', d => { out += d })
+    slow.stderr.on('data', d => { out += d })
+    try {
+        const until = Date.now() + 15000
+        while (!out.includes(`Listening on ${port}`)) {
+            if (Date.now() > until || slow.exitCode !== null) throw new Error('slow server did not start:\n' + out)
+            await new Promise(r => setTimeout(r, 50))
+        }
+        await (await fetch(base + '/api/room/all')).arrayBuffer()     // the startup read of the room list is done
+
+        const id = ids()
+        const r = await fetch(`${base}/${id}`)
+        assert.ok(r.status < 500, `status ${r.status}`)          // 404 without a front build (the test job)
+        await r.arrayBuffer()
+        const all = await (await fetch(base + '/api/room/all')).json()
+        assert.ok(all.includes(id), 'room listed right after its front page was answered')
+        assert.equal((await (await fetch(`${base}/api/room/${id}`)).json()).id, id)
+
+        const twin = ids()
+        const answers = await Promise.all([fetch(`${base}/${twin}`), fetch(`${base}/${twin}`)])
+        for (const a of answers) { assert.ok(a.status < 500, `status ${a.status}`); await a.arrayBuffer() }
+        const list = await (await fetch(base + '/api/room/all')).json()
+        assert.equal(list.filter(x => x === twin).length, 1, 'two concurrent first visits list the room once')
+        assert.equal(slow.exitCode, null, 'server still running')
+    } finally {
+        if (slow.exitCode === null) slow.kill('SIGKILL')
+        fs.rmSync(data, {recursive: true, force: true})
+        fs.rmSync(cwd, {recursive: true, force: true})
+    }
 })
