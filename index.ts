@@ -61,10 +61,15 @@ app.get('/', async function (req, res,next) {
 app.use('/uploads', express.static(uploadsDir));
 app.use('/', express.static(path.join(__dirname, 'front/build/')));
 
-app.get('/:roomId', (req, res,next)=>{
-    if(!req.params.roomId.includes('.'))
-        roomController.fetchOrCreateRoom(req.params.roomId)
-    
+// Answer only once the room is saved and listed (the capability smoke reads /api/room/all right after);
+// a failure goes to Express (errorRecorder logs the 5xx)
+app.get('/:roomId', async (req, res,next)=>{
+    try {
+        if(!req.params.roomId.includes('.'))
+            await roomController.fetchOrCreateRoom(req.params.roomId)
+    } catch (e) {
+        return next(e)
+    }
     next()
 })
 app.use('/:roomid', express.static(path.join(__dirname, 'front/build')))

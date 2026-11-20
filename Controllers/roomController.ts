@@ -54,10 +54,19 @@ export async function getRoom(id: string): Promise<RoomDTO> {
     }
 }
 
+// Rooms being created by a first visit: a second visit before the save has finished waits for the same
+// creation instead of creating (and listing) the room twice
+const creating = new Map<string, Promise<RoomDTO>>()
+
 export async function fetchOrCreateRoom(id: string): Promise<RoomDTO> {
 
     if (!allRoomIds.includes(id)) {
-        return createNewRoom(id)
+        let pending = creating.get(id)
+        if (!pending) {
+            pending = createNewRoom(id).finally(() => creating.delete(id))
+            creating.set(id, pending)
+        }
+        return pending
     } else {
         return await storage.getRoom(id) as any
     }

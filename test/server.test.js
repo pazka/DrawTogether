@@ -9,6 +9,7 @@ const assert = require('node:assert/strict')
 const {spawn} = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const os = require('node:os')
 const {PollClient} = require('./sio-poll')
 
 const ROOT = path.join(__dirname, '..')
@@ -221,4 +222,108 @@ test('malformed multipart uploads get an error answer and do not take the server
     }
     assert.equal(server.exitCode, null, 'server process still running')
     assert.equal((await fetch(`${BASE}/api/room/${id}`)).status, 200)
+})
+
+// A second server whose node-persist writes take 300 ms (test/slow-persist.js): GET /<room> must answer only
+// once the room is saved and listed, as the capability smoke (hosh-deploy POST_DEPLOY) expects right after it.
+test('slow storage: GET /<name> answers only after the room is saved and listed; two first visits create it once', async () => {
+    const port = 9141
+    const base = `http://127.0.0.1:${port}`
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-slow-'))
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-slowcwd-'))
+    const slow = spawn(process.execPath, ['-r', path.join(__dirname, 'slow-persist.js'), path.join(ROOT, 'index.js'), 'prod'], {
+        cwd,
+        env: {...process.env, PORT: String(port), SLOW_PERSIST_MS: '300',
+            UPLOADS_DIR: path.join(data, 'uploads'), PERSIST_DIR: path.join(data, 'persist')},
+    })
+    let out = ''
+    slow.stdout.on('data', d => { out += d })
+    slow.stderr.on('data', d => { out += d })
+    try {
+        const until = Date.now() + 15000
+        while (!out.includes(`Listening on ${port}`)) {
+            if (Date.now() > until || slow.exitCode !== null) throw new Error('slow server did not start:\n' + out)
+            await new Promise(r => setTimeout(r, 50))
+        }
+        await (await fetch(base + '/api/room/all')).arrayBuffer()     // the startup read of the room list is done
+
+        const id = ids()
+        const r = await fetch(`${base}/${id}`)
+        assert.ok(r.status < 500, `status ${r.status}`)          // 404 without a front build (the test job)
+        await r.arrayBuffer()
+        const all = await (await fetch(base + '/api/room/all')).json()
+        assert.ok(all.includes(id), 'room listed right after its front page was answered')
+        assert.equal((await (await fetch(`${base}/api/room/${id}`)).json()).id, id)
+
+        const twin = ids()
+        const answers = await Promise.all([fetch(`${base}/${twin}`), fetch(`${base}/${twin}`)])
+        for (const a of answers) { assert.ok(a.status < 500, `status ${a.status}`); await a.arrayBuffer() }
+        const list = await (await fetch(base + '/api/room/all')).json()
+        assert.equal(list.filter(x => x === twin).length, 1, 'two concurrent first visits list the room once')
+        assert.equal(slow.exitCode, null, 'server still running')
+    } finally {
+        if (slow.exitCode === null) slow.kill('SIGKILL')
+        fs.rmSync(data, {recursive: true, force: true})
+        fs.rmSync(cwd, {recursive: true, force: true})
+    }
+})
+
+// A third server where creating one room fails (test/fail-room.js): GET /<that room> is a 500 and one request_failed
+// line, the server keeps serving (before, the rejection was unhandled and killed it), and the failed creation is not
+// remembered: once the failure is lifted, a visit to the same room creates it.
+test('failed room creation: GET /<name> is a 500 and one request_failed line; the server lives on; a later visit creates it', async () => {
+    const port = 9142
+    const base = `http://127.0.0.1:${port}`
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-fail-'))
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dt-failcwd-'))
+    const flag = path.join(data, 'fail-room')
+    const env = {...process.env, PORT: String(port), FAIL_ROOM_FILE: flag,
+        UPLOADS_DIR: path.join(data, 'uploads'), PERSIST_DIR: path.join(data, 'persist')}
+    for (const k of ['LOG_LEVEL', 'APP_LOG_LEVEL']) delete env[k]
+    const srv = spawn(process.execPath, ['-r', path.join(__dirname, 'fail-room.js'), path.join(ROOT, 'index.js'), 'prod'], {cwd, env})
+    let out = '', err = ''
+    srv.stdout.on('data', d => { out += d })
+    srv.stderr.on('data', d => { err += d })
+    const lines = () => out.split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l))
+    try {
+        const until = Date.now() + 15000
+        while (!(out + err).includes(`Listening on ${port}`) && !out.includes('"event":"startup"')) {
+            if (Date.now() > until || srv.exitCode !== null) throw new Error('server did not start:\n' + out + err)
+            await new Promise(r => setTimeout(r, 50))
+        }
+        await (await fetch(base + '/api/room/all')).arrayBuffer()
+
+        const id = ids()
+        fs.writeFileSync(flag, id)
+        const r = await fetch(`${base}/${id}`)
+        assert.equal(r.status, 500)
+        await r.arrayBuffer()
+        await new Promise(r => setTimeout(r, 100))
+        assert.equal(srv.exitCode, null, 'server still running after a failed creation:\n' + err)
+        const failed = lines().filter(o => o.event === 'request_failed')
+        assert.equal(failed.length, 1, out)
+        assert.deepEqual([failed[0].level, failed[0].route, failed[0].status], ['error', '/:roomId', 500])
+        assert.equal(failed[0].err.message, 'cannot save room-<hidden>')
+        assert.ok(!JSON.stringify(failed[0]).includes(id), 'no room id in the line')
+        assert.ok(!(await (await fetch(base + '/api/room/all')).json()).includes(id), 'the failed room is not listed')
+
+        const other = ids()
+        const o = await fetch(`${base}/${other}`)
+        assert.ok(o.status < 500, `status ${o.status}`)                // 404 without a front build (the test job)
+        await o.arrayBuffer()
+        assert.ok((await (await fetch(base + '/api/room/all')).json()).includes(other), 'another room is created and listed')
+
+        fs.rmSync(flag)
+        const again = await fetch(`${base}/${id}`)
+        assert.ok(again.status < 500, `status ${again.status} once the failure is lifted`)
+        await again.arrayBuffer()
+        assert.ok((await (await fetch(base + '/api/room/all')).json()).includes(id), 'the room is created on a later visit')
+        assert.equal((await (await fetch(`${base}/api/room/${id}`)).json()).id, id)
+        assert.equal(lines().filter(o => o.event === 'request_failed').length, 1, 'no other failure')
+        assert.equal(srv.exitCode, null, 'server still running')
+    } finally {
+        if (srv.exitCode === null) srv.kill('SIGKILL')
+        fs.rmSync(data, {recursive: true, force: true})
+        fs.rmSync(cwd, {recursive: true, force: true})
+    }
 })

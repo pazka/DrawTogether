@@ -101,10 +101,16 @@ function getRoom(id) {
         }
     });
 }
+const creating = new Map();
 function fetchOrCreateRoom(id) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!allRoomIds.includes(id)) {
-            return createNewRoom(id);
+            let pending = creating.get(id);
+            if (!pending) {
+                pending = createNewRoom(id).finally(() => creating.delete(id));
+                creating.set(id, pending);
+            }
+            return pending;
         }
         else {
             return yield storage.getRoom(id);
