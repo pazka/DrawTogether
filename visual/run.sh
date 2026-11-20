@@ -28,9 +28,14 @@ PIDS=()
 dk() { MSYS_NO_PATHCONV=1 docker "$@"; }
 cleanup() {
   for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null || true; done
+  # wait for the Chromes to exit: a profile still being written makes rm -rf fail ("Directory not empty")
+  # and, under set -e, that turned a green run red after "0 failure(s)" (fix of pazka/StoraAlex#31)
+  for p in "${PIDS[@]}"; do wait "$p" 2>/dev/null || true; done
   dk rm -f "$NAME" >/dev/null 2>&1 || true
   dk volume rm -f "$VOL" >/dev/null 2>&1 || true
-  rm -rf "$P1" "$P2" "$P1.log" "$P2.log" "$P1.server.log"
+  rm -rf "$P1" "$P2" "$P1.log" "$P2.log" "$P1.server.log" 2>/dev/null \
+    || { sleep 2; rm -rf "$P1" "$P2" "$P1.log" "$P2.log" "$P1.server.log" || true; }
+  return 0
 }
 trap cleanup EXIT
 
