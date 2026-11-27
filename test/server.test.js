@@ -205,6 +205,28 @@ test('socket: join, loadRoom, presence, mouse broadcast, saveRoom versioning, ou
     }
 })
 
+test('socket: a closed connection drops its listeners, so an import reaches a live client once', async () => {
+    // before: every connection ever made kept an EDIT_ROOM listener (memory leak), and an import was emitted
+    // once per connection ever made, closed ones included
+    for (let i = 0; i < 3; i++) await (await new PollClient(BASE).connect()).close()
+    await new Promise(r => setTimeout(r, 300))                     // let the server see the disconnects
+    const id = ids()
+    await fetch(`${BASE}/${id}`)
+    const c = await new PollClient(BASE).connect()
+    try {
+        await c.emit('join', id)
+        await c.waitFor('loadRoom')
+        const res = await importRoom(id, {version: 0, layers: [{id: 1, name: 'imported', imgPath: '', texts: []}]})
+        assert.equal(res.status, 200)
+        const [room] = await c.waitFor('loadRoom')
+        assert.equal(room.layers[0].name, 'imported')
+        await new Promise(r => setTimeout(r, 300))
+        assert.deepEqual(c.events.filter(e => e.name === 'loadRoom').length, 0, 'the import was emitted more than once')
+    } finally {
+        await c.close()
+    }
+})
+
 test('malformed multipart uploads get an error answer and do not take the server down', async () => {
     const id = ids()
     await fetch(`${BASE}/${id}`)

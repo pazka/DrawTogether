@@ -9,6 +9,12 @@ export function sub(name: string,cb: Function){
     events[name].push(cb) 
 }
 
+export function unsub(name: string, cb: Function){
+    if(Object.keys(events).includes(name)){
+        events[name] = events[name].filter((f: Function) => f !== cb)
+    }
+}
+
 export function send(name : string,data : any){
     if(!Object.keys(events).includes(name)){
         events[name] = []
