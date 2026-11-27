@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.On = void 0;
 exports.sub = sub;
+exports.unsub = unsub;
 exports.send = send;
 let events = {};
 function sub(name, cb) {
@@ -9,6 +10,11 @@ function sub(name, cb) {
         events[name] = [];
     }
     events[name].push(cb);
+}
+function unsub(name, cb) {
+    if (Object.keys(events).includes(name)) {
+        events[name] = events[name].filter((f) => f !== cb);
+    }
 }
 function send(name, data) {
     if (!Object.keys(events).includes(name)) {

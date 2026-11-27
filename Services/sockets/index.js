@@ -65,15 +65,19 @@ function newSocketConnection(socket) {
             socket.emit(allEvents.error, JSON.stringify(err));
         }
     }));
+    const onEditRoom = (room) => {
+        io.to(room.id).emit(allEvents.loadRoom, room);
+    };
+    const onError = (error) => {
+        io.broadcast.emit(allEvents.error, error);
+    };
     socket.on('disconnect', () => {
+        (0, events_1.unsub)(events_1.On.EDIT_ROOM, onEditRoom);
+        (0, events_1.unsub)(events_1.On.ERROR, onError);
         io.to(currentRoom).emit(allEvents.leave, { id: socket.id });
         log_1.log.debug('socket_disconnect', 'client disconnected', { clients: io.engine.clientsCount });
     });
-    (0, events_1.sub)(events_1.On.EDIT_ROOM, (room) => {
-        io.to(room.id).emit(allEvents.loadRoom, room);
-    });
-    (0, events_1.sub)(events_1.On.ERROR, (error) => {
-        io.broadcast.emit(allEvents.error, error);
-    });
+    (0, events_1.sub)(events_1.On.EDIT_ROOM, onEditRoom);
+    (0, events_1.sub)(events_1.On.ERROR, onError);
 }
 //# sourceMappingURL=index.js.map

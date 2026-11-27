@@ -56,7 +56,7 @@ refuses `node:24.21.0-alpine` (test of the test). The base image is pinned `node
 
 ## What is covered
 
-`test/server.test.js` (16 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
+`test/server.test.js` (17 tests; `test/sio-poll.js` is a tiny Socket.IO long-polling client on `fetch`, so no
 socket.io-client dependency): `GET /` creates a room and redirects; `/<name>` creates that room; with slow storage
 (`test/slow-persist.js`, a `node -r` preload that delays every node-persist write by 300 ms, second server on :9141)
 `GET /<name>` answers only once the room is saved and in `/api/room/all` (what the capability smoke checks right after),
@@ -67,7 +67,8 @@ lifted a visit to the same room creates it (the failed creation is not remembere
 → default room; import replaces a room; image upload stored under `front/build/uploads/<room>/`, linked in
 the layer, served back; non-image extension refused; CORS allow/deny; CORS preflight (`OPTIONS`) on any path;
 `/<name>.<ext>` creates no room; the startup line (mode DEV, port 9001) and no access log (no path, query, IP); two Socket.IO clients: join, `loadRoom`,
-presence, mouse broadcast, `saveRoom` versioning, out-of-sync error.
+presence, mouse broadcast, `saveRoom` versioning, out-of-sync error; a closed connection drops its
+`EDIT_ROOM`/`ERROR` listeners, so after three connect/close cycles an import reaches a live client once.
 
 `test/log.test.js` (18 tests): the logging standard (hosh-management AGENTS.md §11), see "Logs" below.
 
@@ -257,6 +258,7 @@ Local run: `docker build -t drawtogether:smoke . && CHROME=/path/to/chrome bash 
   from the same origin (stored XSS risk); the `roomId` path segment is not sanitised before building the
   target folder.
 - `GET /api/room/all` lists every room id, and a room URL is its only access key.
-- `Services/sockets/index.ts` subscribes `EDIT_ROOM`/`ERROR` once per connection and never unsubscribes:
-  listeners leak and each edit is emitted once per connection ever made.
+- `Services/sockets/index.ts` subscribes `EDIT_ROOM`/`ERROR` once per connection. Fixed 2026-11-27: the listeners
+  are dropped on disconnect (they leaked, memory grew about 15 MB a day on the box, and an import was emitted once
+  per connection ever made). An import is still emitted once per OPEN connection (unchanged).
 - Image runs as root by default (the composes set the user); HEALTHCHECK = `GET /healthz` since v1.2.0.

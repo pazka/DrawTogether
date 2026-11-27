@@ -1,6 +1,6 @@
 ﻿import {getRoom, updateRoom} from "../../Controllers/roomController";
 import {RoomDTO} from "../../DTOs/RoomDTO";
-import {On, send, sub} from "../events";
+import {On, send, sub, unsub} from "../events";
 import env from "../env";
 import {log} from "../log";
 
@@ -60,17 +60,24 @@ function newSocketConnection(socket: any) {
         }
     })
 
+    const onEditRoom = (room : RoomDTO)=>{
+        io.to(room.id).emit(allEvents.loadRoom, room)
+    }
+    const onError = (error : any)=>{
+        io.broadcast.emit(allEvents.error, error)
+    }
+
     socket.on('disconnect', () => {
+        // a closed connection drops its listeners: before, every connection ever made kept one (memory leak,
+        // and an import was emitted once per connection ever made)
+        unsub(On.EDIT_ROOM, onEditRoom)
+        unsub(On.ERROR, onError)
         io.to(currentRoom).emit(allEvents.leave, {id: socket.id})
         log.debug('socket_disconnect', 'client disconnected', {clients: io.engine.clientsCount})
     });
     
-    sub(On.EDIT_ROOM, (room : RoomDTO)=>{
-        io.to(room.id).emit(allEvents.loadRoom, room)
-    });
+    sub(On.EDIT_ROOM, onEditRoom);
 
-    sub(On.ERROR, (error : any)=>{
-        io.broadcast.emit(allEvents.error, error)
-    });
+    sub(On.ERROR, onError);
 }
 
